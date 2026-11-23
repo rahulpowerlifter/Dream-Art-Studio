@@ -19,6 +19,7 @@
       color: #f4f4f5;
       font-family: 'Inter', sans-serif;
       background-image: radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.08), transparent 45%);
+      transition: background-color 0.3s ease, color 0.3s ease;
     }
     .font-serif-luxury { font-family: 'Montserrat', sans-serif; letter-spacing: 0.12em; }
     .font-script-luxury { font-family: 'Great Vibes', cursive; }
@@ -32,6 +33,59 @@
     }
     .selected-ring {
       box-shadow: 0 0 0 2px #d4af37, 0 10px 25px -5px rgba(212, 175, 55, 0.35);
+    }
+
+    /* --- ROYAL IVORY (LIGHT WEDDING MAGAZINE) THEME --- */
+    body.theme-ivory {
+      background-color: #faf7f2;
+      color: #18181b;
+      background-image: radial-gradient(circle at 50% 0%, rgba(184, 134, 11, 0.10), transparent 50%);
+    }
+    body.theme-ivory header {
+      background-color: rgba(250, 247, 242, 0.88) !important;
+      border-bottom-color: rgba(184, 134, 11, 0.18) !important;
+    }
+    body.theme-ivory #studioTitle,
+    body.theme-ivory main h2,
+    body.theme-ivory main h3 {
+      color: #18181b !important;
+    }
+    body.theme-ivory #subTitle {
+      color: #9a6f07 !important;
+    }
+    body.theme-ivory .glass-card {
+      background: rgba(255, 255, 255, 0.82);
+      border-color: rgba(184, 134, 11, 0.18);
+      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.06);
+    }
+    body.theme-ivory main .bg-zinc-900,
+    body.theme-ivory main .bg-zinc-950\/90 {
+      background-color: #ffffff !important;
+      color: #3f3f46 !important;
+    }
+    body.theme-ivory main .bg-black\/40,
+    body.theme-ivory main .bg-black\/50 {
+      background-color: rgba(255, 255, 255, 0.9) !important;
+      border-color: rgba(0, 0, 0, 0.1) !important;
+      color: #18181b !important;
+    }
+    body.theme-ivory main .bg-white\/5 {
+      background-color: rgba(0, 0, 0, 0.04) !important;
+      border-color: rgba(0, 0, 0, 0.08) !important;
+    }
+    body.theme-ivory main .border-white\/10,
+    body.theme-ivory main .border-white\/15 {
+      border-color: rgba(0, 0, 0, 0.1) !important;
+    }
+    body.theme-ivory main .text-zinc-400 {
+      color: #52525b !important;
+    }
+    body.theme-ivory main input {
+      color: #18181b !important;
+    }
+    body.theme-ivory .cover-banner-card h2,
+    body.theme-ivory .cover-banner-card p {
+      color: #ffffff !important;
     }
 
     /* --- UNIQUE RED GRADIENT HEART + SPARKLE BURST --- */
@@ -78,9 +132,26 @@
       animation: sparkleOut 0.65s ease-out forwards;
     }
 
+    /* --- UNSELECT (BROKEN HEART) POPUP --- */
+    @keyframes unselectPop {
+      0%   { transform: scale(0.4) translateY(-10px); opacity: 0; }
+      25%  { transform: scale(1.18) translateY(0px); opacity: 1; }
+      55%  { transform: scale(0.96) translateY(4px); opacity: 1; }
+      100% { transform: scale(0.8) translateY(28px); opacity: 0; }
+    }
+    .unselect-svg {
+      width: 86px;
+      height: 86px;
+      filter: drop-shadow(0 0 20px rgba(161, 161, 170, 0.45)) drop-shadow(0 10px 18px rgba(0, 0, 0, 0.7));
+      animation: unselectPop 0.72s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
     /* --- SMOOTH LIGHTBOX SLIDE --- */
     #lightboxImg {
-      transition: transform 0.24s ease, opacity 0.24s ease;
+      transition: transform 0.22s ease, opacity 0.22s ease;
+    }
+    #lightboxImg.dragging {
+      transition: none !important;
     }
     .slide-out-left {
       transform: translateX(-65px) scale(0.96);
@@ -89,6 +160,15 @@
     .slide-in-right {
       transform: translateX(65px) scale(0.96);
       opacity: 0;
+      transition: none !important;
+    }
+
+    /* --- SPEED SELECTION CARD STACK --- */
+    #speedCard {
+      transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s ease;
+      will-change: transform;
+    }
+    #speedCard.dragging {
       transition: none !important;
     }
 
@@ -119,32 +199,98 @@
 <body class="min-h-screen flex flex-col selection:bg-amber-500/30 selection:text-amber-200">
 
   <!-- HEADER -->
-  <header class="sticky top-0 z-30 bg-zinc-950/80 backdrop-blur-xl border-b border-white/10 px-4 sm:px-6 py-3 flex items-center justify-between">
-    <div class="flex items-center gap-3">
-      <img id="headerLogo" src="" alt="Studio Logo" class="h-9 w-auto object-contain hidden" />
-      <div>
-        <h1 id="studioTitle" class="font-serif-luxury text-lg sm:text-xl font-semibold text-white">DREAM ART STUDIO</h1>
-        <p id="subTitle" class="text-[11px] uppercase tracking-[0.2em] text-amber-400/80">Private Client Gallery</p>
+  <header class="sticky top-0 z-30 bg-zinc-950/80 backdrop-blur-xl border-b border-white/10 px-4 sm:px-6 py-3 flex items-center justify-between gap-2">
+    <div class="flex items-center gap-3 min-w-0">
+      <img id="headerLogo" src="" alt="Studio Logo" class="h-9 w-auto object-contain hidden shrink-0" />
+      <div class="truncate">
+        <h1 id="studioTitle" class="font-serif-luxury text-base sm:text-xl font-semibold text-white truncate">DREAM ART STUDIO</h1>
+        <p id="subTitle" class="text-[10px] sm:text-[11px] uppercase tracking-[0.2em] text-amber-400/80 truncate">Private Client Gallery</p>
       </div>
     </div>
-    <div id="headerActions" class="flex items-center gap-2 sm:gap-3"></div>
+    <div class="flex items-center gap-2 shrink-0">
+      <button id="themeToggleBtn" onclick="toggleStudioTheme()" title="Switch Theme (Dark / Royal Ivory)" class="bg-white/10 hover:bg-white/20 border border-white/15 px-2.5 py-1.5 rounded-full text-[11px] font-medium transition cursor-pointer">
+        ☀️ Ivory
+      </button>
+      <div id="headerActions" class="flex items-center gap-2 sm:gap-3"></div>
+    </div>
   </header>
 
   <!-- MAIN CONTAINER -->
   <main id="app" class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6"></main>
 
-  <!-- LIGHTBOX MODAL -->
-  <div id="lightbox" class="fixed inset-0 z-50 bg-black/95 backdrop-blur-md hidden flex-col items-center justify-center p-4 overflow-hidden">
-    <button onclick="closeLightbox()" class="absolute top-4 right-4 text-zinc-300 hover:text-white bg-white/10 hover:bg-white/20 px-3.5 py-1.5 rounded-full text-xs tracking-wider uppercase transition cursor-pointer">✕ Close</button>
-    <div id="lightboxImgWrap" onclick="handleLightboxTap()" class="relative flex items-center justify-center cursor-pointer select-none">
-      <img id="lightboxImg" src="" class="max-h-[62vh] max-w-[94vw] object-contain rounded-lg shadow-2xl select-none" />
+  <!-- SPEED SELECTION (TINDER-STYLE) MODAL -->
+  <div id="speedModal" class="fixed inset-0 z-50 bg-black/95 backdrop-blur-lg hidden flex-col items-center justify-between p-4 sm:p-6 overflow-hidden touch-none">
+    <div class="w-full max-w-md flex items-center justify-between">
+      <div>
+        <p class="text-[10px] uppercase tracking-[0.25em] text-amber-400">⚡ Speed Selection</p>
+        <p id="speedProgressText" class="text-xs text-zinc-400 mt-0.5">1 / 100</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="speedUndoBtn" onclick="undoSpeedAction()" class="bg-white/10 hover:bg-white/20 text-zinc-200 px-3 py-1.5 rounded-full text-xs transition cursor-pointer disabled:opacity-30">↩ Undo</button>
+        <button onclick="closeSpeedMode()" class="bg-white/10 hover:bg-white/20 text-white px-3.5 py-1.5 rounded-full text-xs uppercase tracking-wider transition cursor-pointer">✕ Done</button>
+      </div>
     </div>
-    <div class="mt-4 flex flex-wrap items-center justify-center gap-2 sm:gap-2.5">
+
+    <div class="relative flex-1 w-full max-w-md flex items-center justify-center my-4">
+      <div id="speedNextCard" class="absolute inset-x-4 h-[56vh] max-h-[520px] rounded-3xl overflow-hidden bg-zinc-900 border border-white/10 scale-95 opacity-45 pointer-events-none hidden">
+        <img id="speedNextImg" src="" class="w-full h-full object-cover" />
+      </div>
+
+      <div id="speedCard" class="relative w-full h-[58vh] max-h-[540px] rounded-3xl overflow-hidden bg-zinc-900 border border-white/20 shadow-2xl select-none cursor-grab flex flex-col">
+        <img id="speedImg" src="" draggable="false" class="w-full h-full object-contain bg-black pointer-events-none" />
+
+        <div id="stampSelect" class="absolute top-6 left-6 border-4 border-emerald-400 text-emerald-400 font-bold text-xl uppercase tracking-widest px-4 py-1.5 rounded-xl -rotate-12 opacity-0 pointer-events-none bg-black/50 backdrop-blur-sm">
+          SELECT ♥
+        </div>
+        <div id="stampSkip" class="absolute top-6 right-6 border-4 border-rose-500 text-rose-400 font-bold text-xl uppercase tracking-widest px-4 py-1.5 rounded-xl rotate-12 opacity-0 pointer-events-none bg-black/50 backdrop-blur-sm">
+          SKIP ✕
+        </div>
+        <div id="stampCover" class="absolute bottom-16 left-1/2 -translate-x-1/2 border-4 border-yellow-400 text-yellow-300 font-bold text-lg uppercase tracking-widest px-4 py-1.5 rounded-xl opacity-0 pointer-events-none bg-black/60 backdrop-blur-sm">
+          COVER ★
+        </div>
+
+        <div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-4 py-3 flex items-center justify-between">
+          <span id="speedFilename" class="text-xs text-zinc-200 font-medium truncate"></span>
+          <span id="speedSelectedCount" class="text-[11px] text-amber-400 font-semibold shrink-0 ml-2"></span>
+        </div>
+      </div>
+
+      <div id="speedDoneBox" class="hidden text-center glass-card p-8 rounded-3xl max-w-sm">
+        <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-3xl text-emerald-400">✓</div>
+        <h3 class="font-serif-luxury text-xl font-semibold text-white mb-2">All Caught Up!</h3>
+        <p class="text-xs text-zinc-400 mb-6">You've reviewed all photos in this Speed Mode queue.</p>
+        <button onclick="closeSpeedMode()" class="gold-gradient text-black font-semibold text-xs px-6 py-3 rounded-xl uppercase tracking-wider cursor-pointer">Back to Gallery</button>
+      </div>
+    </div>
+
+    <div id="speedControls" class="w-full max-w-md flex flex-col items-center gap-2.5">
+      <div class="flex items-center justify-center gap-5">
+        <button onclick="triggerSpeedAction('skip')" title="Skip (Left Arrow)" class="w-14 h-14 rounded-full bg-rose-500/15 hover:bg-rose-500 text-rose-400 hover:text-white border border-rose-500/40 text-xl font-bold shadow-xl transition cursor-pointer flex items-center justify-center">
+          ✕
+        </button>
+        <button onclick="triggerSpeedAction('cover')" title="Mark as Cover / Frame (Up Arrow)" class="w-12 h-12 rounded-full bg-yellow-400/15 hover:bg-yellow-400 text-yellow-300 hover:text-black border border-yellow-400/40 text-lg font-bold shadow-xl transition cursor-pointer flex items-center justify-center">
+          ★
+        </button>
+        <button onclick="triggerSpeedAction('select')" title="Select Photo (Right Arrow)" class="w-14 h-14 rounded-full gold-gradient text-black text-2xl font-bold shadow-xl shadow-amber-500/30 hover:scale-105 transition cursor-pointer flex items-center justify-center">
+          ♥
+        </button>
+      </div>
+      <p class="text-[10px] text-zinc-500 tracking-wide">Swipe ← Skip &bull; Swipe ↑ Cover ★ &bull; Swipe → Select ♥</p>
+    </div>
+  </div>
+
+  <!-- LIGHTBOX MODAL -->
+  <div id="lightbox" class="fixed inset-0 z-50 bg-black/95 backdrop-blur-md hidden flex-col items-center justify-center p-4 overflow-hidden touch-none">
+    <button onclick="closeLightbox()" class="absolute top-4 right-4 z-20 text-zinc-300 hover:text-white bg-white/10 hover:bg-white/20 px-3.5 py-1.5 rounded-full text-xs tracking-wider uppercase transition cursor-pointer">✕ Close</button>
+    <div id="lightboxImgWrap" onclick="handleLightboxTap()" class="relative flex items-center justify-center cursor-pointer select-none overflow-hidden rounded-lg max-h-[60vh] max-w-[94vw]">
+      <img id="lightboxImg" src="" draggable="false" class="max-h-[60vh] max-w-[94vw] object-contain rounded-lg shadow-2xl select-none" />
+    </div>
+    <div class="mt-4 z-20 flex flex-wrap items-center justify-center gap-2 sm:gap-2.5">
       <button onclick="prevPhoto()" class="bg-white/10 hover:bg-white/20 px-3.5 py-2 rounded-full text-xs uppercase tracking-wider transition cursor-pointer">← Prev</button>
       <button id="lightboxSelectBtn" onclick="toggleCurrentLightboxSelect()" class="px-4 py-2 rounded-full font-semibold text-xs uppercase tracking-wider transition cursor-pointer">♥ Select</button>
+      <button id="lightboxZoomBtn" onclick="cycleLightboxZoom()" class="bg-white/10 hover:bg-white/20 text-white border border-white/15 px-3.5 py-2 rounded-full font-semibold text-xs uppercase tracking-wider transition cursor-pointer">🔍 1x</button>
       <button id="lightboxStarBtn" onclick="toggleCurrentLightboxStar()" class="px-4 py-2 rounded-full font-semibold text-xs uppercase tracking-wider transition cursor-pointer">★ Cover / Frame</button>
       <button onclick="openFramePreviewFromLightbox()" class="bg-amber-500/20 hover:bg-amber-500/35 text-amber-200 border border-amber-500/35 px-4 py-2 rounded-full font-semibold text-xs uppercase tracking-wider transition cursor-pointer">🖼️ Frame View</button>
-      <button id="lightboxHideBtn" onclick="toggleCurrentLightboxHide()" class="px-3.5 py-2 rounded-full font-semibold text-xs uppercase tracking-wider transition cursor-pointer">✕ Hide</button>
       <button id="lightboxDeleteBtn" onclick="deleteCurrentLightboxPhoto()" class="hidden bg-rose-500/15 hover:bg-rose-500/35 text-rose-300 border border-rose-500/35 px-3.5 py-2 rounded-full font-semibold text-xs uppercase tracking-wider transition cursor-pointer inline-flex items-center gap-1.5">
         <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
         <span>Delete</span>
@@ -152,11 +298,12 @@
       <button onclick="nextPhoto()" class="bg-white/10 hover:bg-white/20 px-3.5 py-2 rounded-full text-xs uppercase tracking-wider transition cursor-pointer">Next →</button>
     </div>
     <!-- LIGHTBOX COMMENT BOX -->
-    <div class="mt-3 w-full max-w-md flex items-center gap-2">
+    <div class="mt-3 z-20 w-full max-w-md flex items-center gap-2">
       <input id="lightboxCommentInput" type="text" placeholder="Add a note (e.g. Retouch background, B&W)..." class="flex-1 bg-white/10 border border-white/15 rounded-full px-4 py-2 text-xs text-white placeholder-zinc-400 outline-none focus:border-amber-400 transition" />
       <button id="lightboxSaveNoteBtn" onclick="saveLightboxComment()" class="gold-gradient text-black font-semibold text-xs px-4 py-2 rounded-full hover:opacity-90 transition cursor-pointer">Save</button>
     </div>
-    <p id="lightboxFilename" class="mt-2.5 text-xs text-zinc-400 tracking-wide"></p>
+    <p id="lightboxFilename" class="mt-2.5 z-20 text-xs text-zinc-400 tracking-wide"></p>
+    <p id="lightboxHint" class="mt-1 z-20 text-[10px] text-zinc-500 tracking-wide">Swipe ↑ Select &bull; Swipe ↓ Unselect &bull; Tap 🔍 to Zoom & Drag</p>
   </div>
 
   <!-- WALL FRAME PREVIEW MODAL -->
@@ -170,7 +317,6 @@
         <button onclick="closeFramePreview()" class="text-zinc-400 hover:text-white bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full text-xs cursor-pointer">✕ Close</button>
       </div>
 
-      <!-- WALL MOCKUP STAGE -->
       <div id="frameWallStage" class="wall-cream relative flex flex-col items-center justify-center py-10 sm:py-14 px-6 transition-all duration-300">
         <div class="relative flex flex-col items-center">
           <div id="frameOuterBox" class="frame-black bg-[#faf8f5] p-3 sm:p-4 transition-all duration-300">
@@ -181,7 +327,6 @@
         <p class="mt-2 text-[10px] uppercase tracking-[0.25em] text-black/45 font-semibold" id="frameWallCaption">Living Room Wall Preview</p>
       </div>
 
-      <!-- FRAME & WALL CONTROLS -->
       <div class="p-4 sm:p-5 bg-zinc-950 border-t border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div class="flex flex-wrap items-center gap-2">
           <span class="text-[10px] uppercase tracking-wider text-zinc-500 mr-1">Frame:</span>
@@ -239,15 +384,30 @@
     </div>
   </div>
 
-  <!-- WHATSAPP SUBMIT CONFIRMATION MODAL -->
+  <!-- WHATSAPP SUBMIT + GOOGLE REVIEW BOOSTER MODAL -->
   <div id="submitSuccessModal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden items-center justify-center p-4">
     <div class="bg-zinc-950 border border-emerald-500/30 rounded-3xl max-w-sm w-full p-7 text-center shadow-2xl">
       <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-3xl text-emerald-400">✓</div>
       <h3 class="font-serif-luxury text-xl font-semibold text-white mb-2">Selection Locked!</h3>
-      <p id="submitSummaryText" class="text-xs text-zinc-400 leading-relaxed mb-6"></p>
-      <a id="whatsappAlertLink" href="#" target="_blank" onclick="closeSubmitModal()" class="block w-full bg-emerald-500 hover:bg-emerald-400 text-black font-semibold py-3 rounded-xl text-sm transition mb-3">
+      <p id="submitSummaryText" class="text-xs text-zinc-400 leading-relaxed mb-5"></p>
+      <a id="whatsappAlertLink" href="#" target="_blank" class="block w-full bg-emerald-500 hover:bg-emerald-400 text-black font-semibold py-3 rounded-xl text-sm transition mb-5">
         📲 Send WhatsApp Alert to Studio
       </a>
+
+      <!-- AUTO GOOGLE REVIEW BOOSTER -->
+      <div class="pt-4 border-t border-white/10 mb-4">
+        <p class="text-[11px] uppercase tracking-[0.2em] text-amber-400 mb-1">Loved Your Photos?</p>
+        <p class="text-[11px] text-zinc-400 mb-2.5">Tap a star to rate your experience with us!</p>
+        <div id="reviewStarsWrap" class="flex items-center justify-center gap-2 text-2xl">
+          <button onclick="handleStarRating(1)" class="review-star text-zinc-600 hover:text-amber-400 hover:scale-125 transition cursor-pointer">★</button>
+          <button onclick="handleStarRating(2)" class="review-star text-zinc-600 hover:text-amber-400 hover:scale-125 transition cursor-pointer">★</button>
+          <button onclick="handleStarRating(3)" class="review-star text-zinc-600 hover:text-amber-400 hover:scale-125 transition cursor-pointer">★</button>
+          <button onclick="handleStarRating(4)" class="review-star text-zinc-600 hover:text-amber-400 hover:scale-125 transition cursor-pointer">★</button>
+          <button onclick="handleStarRating(5)" class="review-star text-zinc-600 hover:text-amber-400 hover:scale-125 transition cursor-pointer">★</button>
+        </div>
+        <p id="reviewFeedbackMsg" class="text-[11px] text-amber-300 mt-2 hidden"></p>
+      </div>
+
       <button onclick="closeSubmitModal()" class="text-xs text-zinc-500 hover:text-white transition cursor-pointer">Close</button>
     </div>
   </div>
@@ -264,6 +424,9 @@
     const STUDIO_LOGO_URL = "https://res.cloudinary.com/cmaowgef/image/upload/v1795406490/Da_2_Dream_art_studio.png";
     const STUDIO_WHATSAPP_NUMBER = "918489316333";
     const ADMIN_PASSWORD = "anbeshivam@1";
+
+    // Paste your exact Google Maps Review link below:
+    const GOOGLE_REVIEW_URL = "https://www.google.com/search?q=Dream+Art+Studio+Mayiladuthurai+reviews";
 
     const CLOUDINARY_CLOUD_NAME = "cmaowgef";
     const CLOUDINARY_UPLOAD_PRESET = "dream art studio";
@@ -286,6 +449,34 @@
       logoEl.classList.remove("hidden");
     }
 
+    // =========================================================
+    // THEME SWITCHER (DARK LUXURY / ROYAL IVORY)
+    // =========================================================
+    function applyStudioTheme(theme) {
+      const btn = document.getElementById("themeToggleBtn");
+      if (theme === "ivory") {
+        document.body.classList.add("theme-ivory");
+        if (btn) {
+          btn.innerText = "🌙 Dark";
+          btn.className = "bg-amber-900/10 hover:bg-amber-900/20 text-zinc-800 border border-amber-900/20 px-2.5 py-1.5 rounded-full text-[11px] font-medium transition cursor-pointer";
+        }
+      } else {
+        document.body.classList.remove("theme-ivory");
+        if (btn) {
+          btn.innerText = "☀️ Ivory";
+          btn.className = "bg-white/10 hover:bg-white/20 text-white border border-white/15 px-2.5 py-1.5 rounded-full text-[11px] font-medium transition cursor-pointer";
+        }
+      }
+    }
+
+    window.toggleStudioTheme = () => {
+      const nextTheme = document.body.classList.contains("theme-ivory") ? "dark" : "ivory";
+      localStorage.setItem("studioTheme", nextTheme);
+      applyStudioTheme(nextTheme);
+    };
+
+    applyStudioTheme(localStorage.getItem("studioTheme") || "dark");
+
     const fbApp = initializeApp(firebaseConfig);
     const db = getFirestore(fbApp);
 
@@ -296,11 +487,10 @@
     let currentGallery = null;
     let selectedSet = new Set();
     let starredSet = new Set();
-    let hiddenSet = new Set();
     let commentsMap = {};
     let foldersList = [];
     let lightboxIndex = 0;
-    let activeFilter = "all"; // "all", "selected", "unselected", "starred", "notes", "folders", "hidden"
+    let activeFilter = "all"; // "all", "selected", "folders", "starred", "notes"
     let searchQuery = "";
     let addMoreTargetId = null;
     let isAdminViewing = false;
@@ -309,6 +499,24 @@
     // Frame Preview state
     let activeFrameStyle = "black";
     let activeWallStyle = "cream";
+
+    // Lightbox Zoom & Pan state
+    let zoomLevel = 1;
+    let panX = 0;
+    let panY = 0;
+    let isPanning = false;
+    let panStartX = 0;
+    let panStartY = 0;
+
+    // Speed Mode state
+    let speedQueue = [];
+    let speedIdx = 0;
+    let speedHistory = [];
+    let speedDragging = false;
+    let speedStartX = 0;
+    let speedStartY = 0;
+    let speedCurrX = 0;
+    let speedCurrY = 0;
 
     // Double-tap / Double-click state
     let lastTapTime = 0;
@@ -324,6 +532,490 @@
 
     // --- UNIQUE SLEEK SVG DELETE ICON ---
     const UNIQUE_DELETE_SVG = `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>`;
+
+    // =========================================================
+    // 1-TAP WHATSAPP CLIENT INVITE (ADMIN SIDE)
+    // =========================================================
+    window.shareGalleryWhatsApp = (eventName, shareUrl, pin) => {
+      const msg =
+        `Hi! Your private gallery from *${STUDIO_NAME}* is ready ✨\n\n` +
+        `📸 *Event:* ${eventName}\n` +
+        `🔗 *Gallery Link:* ${shareUrl}\n` +
+        `🔐 *PIN:* ${pin}\n\n` +
+        `Open the link, enter your PIN, and double-tap or swipe to select your favorite photos!`;
+      const waUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+      window.open(waUrl, "_blank");
+    };
+
+    // =========================================================
+    // SPEED SELECTION MODE (TINDER-STYLE CARD STACK)
+    // =========================================================
+    window.openSpeedMode = () => {
+      if (isGalleryLocked()) {
+        alert("This gallery is locked after submission.");
+        return;
+      }
+      const allPhotos = (currentGallery.photos || []).map((p, i) => ({ ...p, origIdx: i }));
+      let queue = allPhotos.filter(p => !selectedSet.has(p.filename));
+      if (queue.length === 0) queue = allPhotos;
+      if (queue.length === 0) {
+        alert("No photos available for Speed Mode.");
+        return;
+      }
+      speedQueue = queue;
+      speedIdx = 0;
+      speedHistory = [];
+      document.getElementById("speedModal").classList.remove("hidden");
+      document.getElementById("speedModal").classList.add("flex");
+      renderSpeedCard();
+    };
+
+    window.closeSpeedMode = () => {
+      document.getElementById("speedModal").classList.add("hidden");
+      document.getElementById("speedModal").classList.remove("flex");
+      renderClientPhotos();
+    };
+
+    function resetSpeedCardVisual() {
+      const card = document.getElementById("speedCard");
+      card.classList.remove("dragging");
+      card.style.transform = "translate(0px, 0px) rotate(0deg)";
+      card.style.opacity = "1";
+      document.getElementById("stampSelect").style.opacity = "0";
+      document.getElementById("stampSkip").style.opacity = "0";
+      document.getElementById("stampCover").style.opacity = "0";
+    }
+
+    function renderSpeedCard() {
+      const card = document.getElementById("speedCard");
+      const nextCard = document.getElementById("speedNextCard");
+      const doneBox = document.getElementById("speedDoneBox");
+      const controls = document.getElementById("speedControls");
+      const undoBtn = document.getElementById("speedUndoBtn");
+
+      undoBtn.disabled = speedHistory.length === 0;
+
+      if (speedIdx >= speedQueue.length) {
+        card.classList.add("hidden");
+        nextCard.classList.add("hidden");
+        controls.classList.add("hidden");
+        doneBox.classList.remove("hidden");
+        document.getElementById("speedProgressText").innerText = `Completed ${speedQueue.length} / ${speedQueue.length}`;
+        return;
+      }
+
+      card.classList.remove("hidden");
+      controls.classList.remove("hidden");
+      doneBox.classList.add("hidden");
+      resetSpeedCardVisual();
+
+      const curr = speedQueue[speedIdx];
+      document.getElementById("speedImg").src = curr.url;
+      document.getElementById("speedFilename").innerText = curr.filename;
+      document.getElementById("speedProgressText").innerText = `Card ${speedIdx + 1} / ${speedQueue.length}`;
+      document.getElementById("speedSelectedCount").innerText = `♥ ${selectedSet.size} / ${currentGallery.maxLimit}`;
+
+      if (speedIdx + 1 < speedQueue.length) {
+        nextCard.classList.remove("hidden");
+        document.getElementById("speedNextImg").src = speedQueue[speedIdx + 1].url;
+      } else {
+        nextCard.classList.add("hidden");
+      }
+    }
+
+    window.triggerSpeedAction = async (action) => {
+      if (speedIdx >= speedQueue.length) return;
+      const item = speedQueue[speedIdx];
+      const card = document.getElementById("speedCard");
+
+      if ((action === "select" || action === "cover") && !selectedSet.has(item.filename)) {
+        if (!isAdminViewing && selectedSet.size >= currentGallery.maxLimit) {
+          alert(`You have reached the maximum limit of ${currentGallery.maxLimit} photos.`);
+          resetSpeedCardVisual();
+          return;
+        }
+      }
+
+      const prevSelected = selectedSet.has(item.filename);
+      const prevStarred = starredSet.has(item.filename);
+
+      if (action === "select") {
+        selectedSet.add(item.filename);
+        playFeedbackSound("select");
+        triggerHaptic("select");
+        document.getElementById("stampSelect").style.opacity = "1";
+        card.style.transform = "translate(420px, 30px) rotate(22deg)";
+        card.style.opacity = "0";
+      } else if (action === "cover") {
+        selectedSet.add(item.filename);
+        starredSet.add(item.filename);
+        playFeedbackSound("select");
+        triggerHaptic("select");
+        document.getElementById("stampCover").style.opacity = "1";
+        card.style.transform = "translate(0px, -420px) scale(0.92)";
+        card.style.opacity = "0";
+      } else {
+        playFeedbackSound("unselect");
+        triggerHaptic("unselect");
+        document.getElementById("stampSkip").style.opacity = "1";
+        card.style.transform = "translate(-420px, 30px) rotate(-22deg)";
+        card.style.opacity = "0";
+      }
+
+      speedHistory.push({ idx: speedIdx, filename: item.filename, prevSelected, prevStarred });
+
+      if (action === "select" || action === "cover") {
+        updateDoc(doc(db, "galleries", currentGallery.id), {
+          selected: Array.from(selectedSet),
+          starred: Array.from(starredSet)
+        });
+      }
+
+      setTimeout(() => {
+        speedIdx++;
+        renderSpeedCard();
+      }, 240);
+    };
+
+    window.undoSpeedAction = () => {
+      if (speedHistory.length === 0) return;
+      const last = speedHistory.pop();
+      if (last.prevSelected) selectedSet.add(last.filename);
+      else selectedSet.delete(last.filename);
+      if (last.prevStarred) starredSet.add(last.filename);
+      else starredSet.delete(last.filename);
+
+      updateDoc(doc(db, "galleries", currentGallery.id), {
+        selected: Array.from(selectedSet),
+        starred: Array.from(starredSet)
+      });
+
+      speedIdx = last.idx;
+      renderSpeedCard();
+    };
+
+    const speedCardEl = document.getElementById("speedCard");
+
+    function startSpeedDrag(x, y) {
+      if (speedIdx >= speedQueue.length) return;
+      speedDragging = true;
+      speedStartX = x;
+      speedStartY = y;
+      speedCurrX = 0;
+      speedCurrY = 0;
+      speedCardEl.classList.add("dragging");
+      speedCardEl.style.cursor = "grabbing";
+    }
+
+    function moveSpeedDrag(x, y) {
+      if (!speedDragging) return;
+      speedCurrX = x - speedStartX;
+      speedCurrY = y - speedStartY;
+      const rot = speedCurrX * 0.06;
+      speedCardEl.style.transform = `translate(${speedCurrX}px, ${speedCurrY}px) rotate(${rot}deg)`;
+
+      const selOp = speedCurrX > 25 ? Math.min(1, (speedCurrX - 25) / 80) : 0;
+      const skipOp = speedCurrX < -25 ? Math.min(1, (-speedCurrX - 25) / 80) : 0;
+      const covOp = (speedCurrY < -35 && Math.abs(speedCurrX) < 70) ? Math.min(1, (-speedCurrY - 35) / 80) : 0;
+
+      document.getElementById("stampSelect").style.opacity = String(selOp);
+      document.getElementById("stampSkip").style.opacity = String(skipOp);
+      document.getElementById("stampCover").style.opacity = String(covOp);
+    }
+
+    function endSpeedDrag() {
+      if (!speedDragging) return;
+      speedDragging = false;
+      speedCardEl.classList.remove("dragging");
+      speedCardEl.style.cursor = "grab";
+
+      if (speedCurrX > 95) {
+        window.triggerSpeedAction("select");
+      } else if (speedCurrX < -95) {
+        window.triggerSpeedAction("skip");
+      } else if (speedCurrY < -95) {
+        window.triggerSpeedAction("cover");
+      } else {
+        resetSpeedCardVisual();
+      }
+    }
+
+    speedCardEl.addEventListener("touchstart", (e) => {
+      if (e.touches.length === 1) startSpeedDrag(e.touches[0].clientX, e.touches[0].clientY);
+    }, { passive: true });
+    speedCardEl.addEventListener("touchmove", (e) => {
+      if (e.touches.length === 1) moveSpeedDrag(e.touches[0].clientX, e.touches[0].clientY);
+    }, { passive: true });
+    speedCardEl.addEventListener("touchend", endSpeedDrag, { passive: true });
+
+    speedCardEl.addEventListener("mousedown", (e) => startSpeedDrag(e.clientX, e.clientY));
+    window.addEventListener("mousemove", (e) => moveSpeedDrag(e.clientX, e.clientY));
+    window.addEventListener("mouseup", endSpeedDrag);
+
+    // =========================================================
+    // AUTO-BOOKMARK ("RESUME WHERE YOU LEFT OFF")
+    // =========================================================
+    function savePhotoBookmark(idx) {
+      if (!currentGallery || !currentGallery.id) return;
+      try {
+        localStorage.setItem("bookmark_" + currentGallery.id, String(idx));
+      } catch (e) {}
+    }
+
+    function getPhotoBookmark() {
+      if (!currentGallery || !currentGallery.id) return -1;
+      try {
+        const val = localStorage.getItem("bookmark_" + currentGallery.id);
+        if (val === null) return -1;
+        const idx = parseInt(val, 10);
+        if (!isNaN(idx) && idx >= 0 && idx < (currentGallery.photos || []).length) {
+          return idx;
+        }
+      } catch (e) {}
+      return -1;
+    }
+
+    // =========================================================
+    // 1-CLICK PC AUTO-COPY SCRIPT (.BAT) GENERATOR
+    // =========================================================
+    function sanitizeWinFolder(name) {
+      return String(name || "Folder").replace(/[<>:"/\\|?*]/g, "_").trim() || "Folder";
+    }
+
+    window.downloadAutoCopyScript = async (id) => {
+      const snap = await getDoc(doc(db, "galleries", id));
+      if (!snap.exists()) return;
+      const g = snap.data();
+      const selected = g.selected || [];
+      const starred = g.starred || [];
+      const folders = g.folders || [];
+
+      if (selected.length === 0 && starred.length === 0 && folders.length === 0) {
+        alert("Client hasn't selected any photos yet.");
+        return;
+      }
+
+      const lines = [
+        "@echo off",
+        "echo ==========================================",
+        `echo   ${STUDIO_NAME} - AUTO COPY SCRIPT`,
+        `echo   Gallery: ${g.name}`,
+        "echo ==========================================",
+        "echo.",
+        "echo Copying original files (JPG / RAW)..."
+      ];
+
+      if (selected.length > 0) {
+        lines.push('mkdir "Selected_All" 2>nul');
+        selected.forEach(fn => {
+          const base = fn.replace(/\.[^/.]+$/, "");
+          lines.push(`copy /Y "${base}.*" "Selected_All\\" >nul 2>&1`);
+        });
+      }
+
+      if (starred.length > 0) {
+        lines.push('mkdir "Covers_Frames" 2>nul');
+        starred.forEach(fn => {
+          const base = fn.replace(/\.[^/.]+$/, "");
+          lines.push(`copy /Y "${base}.*" "Covers_Frames\\" >nul 2>&1`);
+        });
+      }
+
+      folders.forEach(f => {
+        const fPhotos = f.photos || [];
+        if (fPhotos.length > 0) {
+          const safeFolder = "Folder_" + sanitizeWinFolder(f.name);
+          lines.push(`mkdir "${safeFolder}" 2>nul`);
+          fPhotos.forEach(fn => {
+            const base = fn.replace(/\.[^/.]+$/, "");
+            lines.push(`copy /Y "${base}.*" "${safeFolder}\\" >nul 2>&1`);
+          });
+        }
+      });
+
+      lines.push("echo.");
+      lines.push("echo DONE! All selected original files have been copied into folders.");
+      lines.push("pause");
+
+      const batContent = lines.join("\r\n");
+      const blob = new Blob([batContent], { type: "application/bat" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Copy_${sanitizeWinFolder(g.name).replace(/\s+/g, "_")}.bat`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    };
+
+    // =========================================================
+    // GOOGLE REVIEW BOOSTER HANDLER
+    // =========================================================
+    window.handleStarRating = (rating) => {
+      const stars = document.querySelectorAll(".review-star");
+      stars.forEach((s, i) => {
+        if (i < rating) {
+          s.classList.remove("text-zinc-600");
+          s.classList.add("text-amber-400");
+        } else {
+          s.classList.add("text-zinc-600");
+          s.classList.remove("text-amber-400");
+        }
+      });
+
+      const msgEl = document.getElementById("reviewFeedbackMsg");
+      msgEl.classList.remove("hidden");
+
+      if (rating >= 4) {
+        msgEl.innerText = "Thank you! ❤️ Opening Google Reviews...";
+        setTimeout(() => {
+          window.open(GOOGLE_REVIEW_URL, "_blank");
+        }, 450);
+      } else {
+        msgEl.innerText = "Thank you for your feedback! We'll make your album experience even better.";
+      }
+    };
+
+    // =========================================================
+    // LIGHTBOX FACE ZOOM (1x / 2x / 3x) + DRAG PAN
+    // =========================================================
+    function applyLightboxTransform() {
+      const img = document.getElementById("lightboxImg");
+      const wrap = document.getElementById("lightboxImgWrap");
+      const btn = document.getElementById("lightboxZoomBtn");
+      const hint = document.getElementById("lightboxHint");
+
+      img.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
+
+      if (zoomLevel > 1) {
+        btn.innerText = `🔍 ${zoomLevel}x`;
+        btn.className = "gold-gradient text-black font-semibold text-xs uppercase tracking-wider px-3.5 py-2 rounded-full transition cursor-pointer";
+        wrap.style.cursor = isPanning ? "grabbing" : "grab";
+        if (hint) hint.innerText = `Zoomed ${zoomLevel}x • Drag photo to inspect faces • Tap 🔍 to reset`;
+      } else {
+        btn.innerText = "🔍 1x";
+        btn.className = "bg-white/10 hover:bg-white/20 text-white border border-white/15 px-3.5 py-2 rounded-full font-semibold text-xs uppercase tracking-wider transition cursor-pointer";
+        wrap.style.cursor = "pointer";
+        if (hint) hint.innerText = "Swipe ↑ Select • Swipe ↓ Unselect • Tap 🔍 to Zoom & Drag";
+      }
+    }
+
+    function resetLightboxZoom() {
+      zoomLevel = 1;
+      panX = 0;
+      panY = 0;
+      isPanning = false;
+      applyLightboxTransform();
+    }
+
+    window.cycleLightboxZoom = () => {
+      if (zoomLevel === 1) zoomLevel = 2;
+      else if (zoomLevel === 2) zoomLevel = 3;
+      else {
+        zoomLevel = 1;
+        panX = 0;
+        panY = 0;
+      }
+      applyLightboxTransform();
+    };
+
+    const lbWrap = document.getElementById("lightboxImgWrap");
+    lbWrap.addEventListener("mousedown", (e) => {
+      if (zoomLevel <= 1) return;
+      isPanning = true;
+      panStartX = e.clientX - panX;
+      panStartY = e.clientY - panY;
+      document.getElementById("lightboxImg").classList.add("dragging");
+      applyLightboxTransform();
+    });
+
+    window.addEventListener("mousemove", (e) => {
+      if (!isPanning || zoomLevel <= 1) return;
+      panX = e.clientX - panStartX;
+      panY = e.clientY - panStartY;
+      applyLightboxTransform();
+    });
+
+    window.addEventListener("mouseup", () => {
+      if (!isPanning) return;
+      isPanning = false;
+      document.getElementById("lightboxImg").classList.remove("dragging");
+      applyLightboxTransform();
+    });
+
+    lbWrap.addEventListener("touchstart", (e) => {
+      if (zoomLevel <= 1 || e.touches.length !== 1) return;
+      isPanning = true;
+      panStartX = e.touches[0].clientX - panX;
+      panStartY = e.touches[0].clientY - panY;
+      document.getElementById("lightboxImg").classList.add("dragging");
+    }, { passive: true });
+
+    lbWrap.addEventListener("touchmove", (e) => {
+      if (!isPanning || zoomLevel <= 1 || e.touches.length !== 1) return;
+      panX = e.touches[0].clientX - panStartX;
+      panY = e.touches[0].clientY - panStartY;
+      applyLightboxTransform();
+    }, { passive: true });
+
+    lbWrap.addEventListener("touchend", () => {
+      if (!isPanning) return;
+      isPanning = false;
+      document.getElementById("lightboxImg").classList.remove("dragging");
+    }, { passive: true });
+
+    // =========================================================
+    // SOUND EFFECTS (WEB AUDIO API) + HAPTIC VIBRATION
+    // =========================================================
+    let audioCtx = null;
+
+    function playFeedbackSound(type) {
+      try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return;
+        if (!audioCtx) audioCtx = new AudioContextClass();
+        if (audioCtx.state === "suspended") audioCtx.resume();
+
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === "select") {
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(520, now);
+          osc.frequency.exponentialRampToValueAtTime(920, now + 0.11);
+          gain.gain.setValueAtTime(0.001, now);
+          gain.gain.linearRampToValueAtTime(0.18, now + 0.015);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+          osc.start(now);
+          osc.stop(now + 0.17);
+        } else {
+          osc.type = "triangle";
+          osc.frequency.setValueAtTime(380, now);
+          osc.frequency.exponentialRampToValueAtTime(190, now + 0.14);
+          gain.gain.setValueAtTime(0.001, now);
+          gain.gain.linearRampToValueAtTime(0.15, now + 0.015);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+          osc.start(now);
+          osc.stop(now + 0.17);
+        }
+      } catch (e) {}
+    }
+
+    function triggerHaptic(type) {
+      try {
+        if (navigator.vibrate) {
+          if (type === "select") {
+            navigator.vibrate(35);
+          } else {
+            navigator.vibrate([22, 35, 22]);
+          }
+        }
+      } catch (e) {}
+    }
 
     function isGalleryLocked() {
       return !isAdminViewing && Boolean(currentGallery && (currentGallery.locked || currentGallery.submitted));
@@ -432,7 +1124,7 @@
       const photoCount = (currentGallery.photos || []).length;
 
       document.getElementById("app").innerHTML = `
-        <div class="relative w-full min-h-[78vh] rounded-3xl overflow-hidden border border-white/15 shadow-2xl flex items-end sm:items-center justify-center">
+        <div class="cover-banner-card relative w-full min-h-[78vh] rounded-3xl overflow-hidden border border-white/15 shadow-2xl flex items-end sm:items-center justify-center">
           ${coverUrl ? `<img src="${coverUrl}" class="absolute inset-0 w-full h-full object-cover scale-105" />` : ''}
           <div class="absolute inset-0 bg-gradient-to-t from-black via-black/55 to-black/30"></div>
 
@@ -522,9 +1214,7 @@
 
       document.getElementById("folderCountBadge").innerText = folderDraftSet.size;
 
-      const allPhotos = (currentGallery.photos || [])
-        .map((p, i) => ({ ...p, origIdx: i }))
-        .filter(p => !hiddenSet.has(p.filename));
+      const allPhotos = (currentGallery.photos || []).map((p, i) => ({ ...p, origIdx: i }));
       const list = folderPickerFilter === "selected"
         ? allPhotos.filter(p => selectedSet.has(p.filename))
         : allPhotos;
@@ -643,7 +1333,7 @@
     };
 
     // =========================================================
-    // UNIQUE RED GRADIENT HEART + SPARKLE BURST
+    // UNIQUE RED GRADIENT HEART + UNSELECT POPUP
     // =========================================================
     function showRedHeart(containerEl) {
       if (!containerEl) return;
@@ -686,12 +1376,32 @@
       setTimeout(() => wrap.remove(), 750);
     }
 
+    function showUnselectPopup(containerEl) {
+      if (!containerEl) return;
+      const wrap = document.createElement("div");
+      wrap.className = "ig-heart-container";
+
+      const gradId = "unSelGrad_" + Date.now() + Math.floor(Math.random() * 1000);
+      wrap.innerHTML = `
+        <svg class="unselect-svg" viewBox="0 0 24 24" fill="none">
+          <defs>
+            <linearGradient id="${gradId}" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#a1a1aa"/>
+              <stop offset="100%" stop-color="#3f3f46"/>
+            </linearGradient>
+          </defs>
+          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="url(#${gradId})" stroke="rgba(255,255,255,0.25)" stroke-width="0.8"/>
+          <path d="M12 5.5L10.2 9.5L13.6 12.5L11.2 17.5" stroke="#09090b" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      `;
+
+      containerEl.appendChild(wrap);
+      setTimeout(() => wrap.remove(), 750);
+    }
+
     async function selectPhotoOnly(idx, delayRender = false) {
       if (isGalleryLocked()) return false;
       const filename = currentGallery.photos[idx].filename;
-      if (hiddenSet.has(filename)) {
-        hiddenSet.delete(filename);
-      }
       if (!selectedSet.has(filename)) {
         if (!isAdminViewing && selectedSet.size >= currentGallery.maxLimit) {
           alert(`You have reached the maximum limit of ${currentGallery.maxLimit} photos.`);
@@ -699,14 +1409,26 @@
         }
         selectedSet.add(filename);
         updateDoc(doc(db, "galleries", currentGallery.id), {
-          selected: Array.from(selectedSet),
-          hidden: Array.from(hiddenSet)
+          selected: Array.from(selectedSet)
         });
         if (delayRender) {
           setTimeout(() => renderClientPhotos(), 480);
         } else {
           renderClientPhotos();
         }
+      }
+      return true;
+    }
+
+    async function unselectPhotoOnly(idx) {
+      if (isGalleryLocked()) return false;
+      const filename = currentGallery.photos[idx].filename;
+      if (selectedSet.has(filename)) {
+        selectedSet.delete(filename);
+        updateDoc(doc(db, "galleries", currentGallery.id), {
+          selected: Array.from(selectedSet)
+        });
+        renderClientPhotos();
       }
       return true;
     }
@@ -721,6 +1443,8 @@
         clearTimeout(singleTapTimer);
         lastTapTime = 0;
         lastTapIdx = -1;
+        playFeedbackSound("select");
+        triggerHaptic("select");
         showRedHeart(el);
         selectPhotoOnly(idx, true);
       } else {
@@ -733,12 +1457,14 @@
     };
 
     window.handleLightboxTap = async () => {
-      if (isGalleryLocked()) return;
+      if (isGalleryLocked() || zoomLevel > 1) return;
       const now = Date.now();
       if (now - lastLightboxTap < 300 && !isAutoSliding) {
         lastLightboxTap = 0;
         isAutoSliding = true;
 
+        playFeedbackSound("select");
+        triggerHaptic("select");
         showRedHeart(document.getElementById("lightboxImgWrap"));
         await selectPhotoOnly(lightboxIndex, false);
         updateLightboxUI();
@@ -863,7 +1589,6 @@
       document.getElementById("headerActions").innerHTML = "";
       document.getElementById("app").innerHTML = `
         <div class="grid lg:grid-cols-3 gap-6">
-          <!-- CREATE GALLERY FORM -->
           <div class="glass-card p-6 rounded-3xl h-fit">
             <h2 class="font-serif-luxury text-lg font-semibold mb-1">New Client Gallery</h2>
             <p class="text-xs text-zinc-400 mb-5">Auto-compresses high-res JPGs for fast client viewing.</p>
@@ -891,7 +1616,6 @@
             </div>
           </div>
 
-          <!-- EXISTING GALLERIES LIST -->
           <div class="lg:col-span-2 glass-card p-6 rounded-3xl">
             <div class="flex items-center justify-between mb-5">
               <h2 class="font-serif-luxury text-lg font-semibold">Client Galleries</h2>
@@ -974,7 +1698,6 @@
         photos: uploadedPhotos,
         selected: [],
         starred: [],
-        hidden: [],
         comments: {},
         folders: [],
         submitted: false,
@@ -986,7 +1709,6 @@
       renderAdminDashboard();
     }
 
-    // --- ADMIN LOCK / UNLOCK GALLERY ---
     window.toggleAdminGalleryLock = async (id, currentlyLocked) => {
       const action = currentlyLocked ? "Unlock" : "Lock";
       if (!confirm(`${action} this gallery for the client?`)) return;
@@ -997,14 +1719,12 @@
       loadAdminGalleries();
     };
 
-    // --- ADMIN DIRECT GALLERY VIEW (NO PIN NEEDED) ---
     window.openAdminGalleryView = async (id) => {
       const snap = await getDoc(doc(db, "galleries", id));
       if (!snap.exists()) return;
       currentGallery = { id: snap.id, ...snap.data() };
       selectedSet = new Set(currentGallery.selected || []);
       starredSet = new Set(currentGallery.starred || []);
-      hiddenSet = new Set(currentGallery.hidden || []);
       commentsMap = currentGallery.comments || {};
       foldersList = currentGallery.folders || [];
       activeFilter = "all";
@@ -1015,7 +1735,6 @@
       renderClientPhotos();
     };
 
-    // --- ADD MORE PHOTOS TO EXISTING GALLERY ---
     window.triggerAddPhotos = (id) => {
       addMoreTargetId = id;
       const input = document.getElementById("addMoreInput");
@@ -1104,38 +1823,40 @@
         const starCount = (g.starred || []).length;
         const notesCount = Object.values(g.comments || {}).filter(c => c && c.trim()).length;
         const folCount = (g.folders || []).length;
-        const hidCount = (g.hidden || []).length;
         const isLocked = Boolean(g.locked || g.submitted);
         const badge = isLocked
           ? `<span class="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full">🔒 Submitted & Locked</span>`
           : `<span class="bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full">In Progress</span>`;
+        const safeNameAttr = escapeHtml(g.name);
+        const safePinAttr = escapeHtml(g.pin);
 
         return `
           <div class="bg-black/40 border border-white/10 hover:border-white/20 p-4 rounded-2xl transition">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div onclick="openAdminGalleryView('${g.id}')" class="cursor-pointer group">
                 <div class="flex items-center gap-2.5">
-                  <h3 class="font-semibold text-white group-hover:text-amber-400 text-base transition">${g.name}</h3>
+                  <h3 class="font-semibold text-white group-hover:text-amber-400 text-base transition">${safeNameAttr}</h3>
                   ${badge}
                 </div>
                 <p class="text-xs text-zinc-400 mt-1.5">
-                  PIN: <span class="text-white font-mono">${g.pin}</span> &bull;
-                  Photos: <span class="text-white">${g.photos.length}</span> &bull;
-                  Selected: <span class="text-amber-400 font-semibold">${selCount} / ${g.maxLimit}</span> &bull;
-                  📁 Folders: <span class="text-emerald-300 font-semibold">${folCount}</span> &bull;
-                  ★ Covers: <span class="text-yellow-300 font-semibold">${starCount}</span> &bull;
-                  💬 Notes: <span class="text-sky-300 font-semibold">${notesCount}</span> &bull;
-                  ✕ Hidden: <span class="text-rose-300 font-semibold">${hidCount}</span>
+                  PIN: <span class="font-mono font-semibold">${safePinAttr}</span> &bull;
+                  Photos: <span class="font-semibold">${g.photos.length}</span> &bull;
+                  Selected: <span class="text-amber-500 font-semibold">${selCount} / ${g.maxLimit}</span> &bull;
+                  📁 Folders: <span class="text-emerald-500 font-semibold">${folCount}</span> &bull;
+                  ★ Covers: <span class="text-yellow-500 font-semibold">${starCount}</span> &bull;
+                  💬 Notes: <span class="text-sky-500 font-semibold">${notesCount}</span>
                 </p>
               </div>
               <div class="flex flex-wrap gap-2">
-                <button onclick="openAdminGalleryView('${g.id}')" class="bg-blue-500/15 hover:bg-blue-500/30 text-blue-300 border border-blue-500/30 text-xs px-3 py-2 rounded-xl transition cursor-pointer">View</button>
-                <button onclick="toggleAdminGalleryLock('${g.id}', ${isLocked})" class="${isLocked ? 'bg-amber-500/20 hover:bg-amber-500/35 text-amber-300 border border-amber-500/30' : 'bg-zinc-700/40 hover:bg-zinc-700 text-zinc-300 border border-white/10'} text-xs px-3 py-2 rounded-xl transition cursor-pointer">${isLocked ? '🔓 Unlock' : '🔒 Lock'}</button>
-                <button onclick="triggerAddPhotos('${g.id}')" class="bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-xs px-3 py-2 rounded-xl transition cursor-pointer">+ Add Photos</button>
-                <button onclick="copyLink('${shareUrl}')" class="bg-white/10 hover:bg-white/20 text-white text-xs px-3 py-2 rounded-xl transition cursor-pointer">Copy Link</button>
+                <button onclick="openAdminGalleryView('${g.id}')" class="bg-blue-500/15 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 text-xs px-3 py-2 rounded-xl transition cursor-pointer">View</button>
+                <button onclick="toggleAdminGalleryLock('${g.id}', ${isLocked})" class="${isLocked ? 'bg-amber-500/20 hover:bg-amber-500/35 text-amber-400 border border-amber-500/30' : 'bg-zinc-700/40 hover:bg-zinc-700 text-zinc-300 border border-white/10'} text-xs px-3 py-2 rounded-xl transition cursor-pointer">${isLocked ? '🔓 Unlock' : '🔒 Lock'}</button>
+                <button onclick="triggerAddPhotos('${g.id}')" class="bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 text-xs px-3 py-2 rounded-xl transition cursor-pointer">+ Add Photos</button>
+                <button onclick="shareGalleryWhatsApp('${safeNameAttr}', '${shareUrl}', '${safePinAttr}')" class="bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs px-3 py-2 rounded-xl transition cursor-pointer">📲 WhatsApp</button>
+                <button onclick="copyLink('${shareUrl}')" class="bg-white/10 hover:bg-white/20 text-xs px-3 py-2 rounded-xl border border-white/15 transition cursor-pointer">Copy Link</button>
+                <button onclick="downloadAutoCopyScript('${g.id}')" title="Download PC Auto-Copy .bat Script" class="bg-purple-500/20 hover:bg-purple-500/35 text-purple-300 border border-purple-500/35 font-semibold text-xs px-3 py-2 rounded-xl transition cursor-pointer">⚡ Copy Script</button>
                 <button onclick="exportLightroom('${g.id}')" class="gold-gradient text-black font-semibold text-xs px-3 py-2 rounded-xl hover:opacity-90 transition cursor-pointer">Export All</button>
-                <button onclick="exportStarred('${g.id}')" class="bg-yellow-500/15 hover:bg-yellow-500/30 text-yellow-300 border border-yellow-500/30 text-xs px-3 py-2 rounded-xl transition cursor-pointer">★ Covers</button>
-                <button onclick="deleteGallery('${g.id}')" title="Delete Gallery" class="bg-rose-500/15 hover:bg-rose-500/35 text-rose-300 border border-rose-500/30 text-xs px-3 py-2 rounded-xl transition cursor-pointer inline-flex items-center gap-1.5">${UNIQUE_DELETE_SVG}<span>Delete</span></button>
+                <button onclick="exportStarred('${g.id}')" class="bg-yellow-500/15 hover:bg-yellow-500/30 text-yellow-400 border border-yellow-500/30 text-xs px-3 py-2 rounded-xl transition cursor-pointer">★ Covers</button>
+                <button onclick="deleteGallery('${g.id}')" title="Delete Gallery" class="bg-rose-500/15 hover:bg-rose-500/35 text-rose-400 border border-rose-500/30 text-xs px-3 py-2 rounded-xl transition cursor-pointer inline-flex items-center gap-1.5">${UNIQUE_DELETE_SVG}<span>Delete</span></button>
               </div>
             </div>
             <p id="addStatus-${g.id}" class="text-xs text-amber-400 mt-3 hidden"></p>
@@ -1195,7 +1916,6 @@
       currentGallery = { id: snap.id, ...snap.data() };
       selectedSet = new Set(currentGallery.selected || []);
       starredSet = new Set(currentGallery.starred || []);
-      hiddenSet = new Set(currentGallery.hidden || []);
       commentsMap = currentGallery.comments || {};
       foldersList = currentGallery.folders || [];
       searchQuery = "";
@@ -1287,13 +2007,13 @@
                   <div class="glass-card p-4 rounded-3xl flex flex-col gap-3">
                     <div class="flex items-start justify-between gap-2">
                       <div>
-                        <span class="text-[10px] uppercase tracking-wider text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">${fPhotos.length} Photos</span>
+                        <span class="text-[10px] uppercase tracking-wider text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">${fPhotos.length} Photos</span>
                         <h3 class="text-base font-semibold text-white mt-2">📁 ${escapeHtml(f.name)}</h3>
                       </div>
                       <div class="flex flex-wrap gap-1.5 shrink-0">
-                        ${!locked ? `<button onclick="openFolderModal(${f.id})" class="bg-white/10 hover:bg-white/20 text-white text-[11px] px-3 py-1.5 rounded-lg transition cursor-pointer">Edit</button>` : ''}
+                        ${!locked ? `<button onclick="openFolderModal(${f.id})" class="bg-white/10 hover:bg-white/20 text-[11px] px-3 py-1.5 rounded-lg border border-white/15 transition cursor-pointer">Edit</button>` : ''}
                         <button onclick="copyFolderFilenames(${f.id})" class="gold-gradient text-black font-semibold text-[11px] px-3 py-1.5 rounded-lg transition cursor-pointer">Copy Names</button>
-                        ${!locked ? `<button onclick="deleteFolder(${f.id})" title="Delete Folder" class="bg-rose-500/15 hover:bg-rose-500/35 text-rose-300 border border-rose-500/30 p-1.5 rounded-lg transition cursor-pointer inline-flex items-center justify-center">${UNIQUE_DELETE_SVG}</button>` : ''}
+                        ${!locked ? `<button onclick="deleteFolder(${f.id})" title="Delete Folder" class="bg-rose-500/15 hover:bg-rose-500/35 text-rose-400 border border-rose-500/30 p-1.5 rounded-lg transition cursor-pointer inline-flex items-center justify-center">${UNIQUE_DELETE_SVG}</button>` : ''}
                       </div>
                     </div>
                     <div class="grid grid-cols-4 sm:grid-cols-5 gap-1.5 bg-black/40 p-2 rounded-2xl border border-white/5">
@@ -1302,7 +2022,7 @@
                           <img src="${p.url}" loading="lazy" class="w-full h-full object-cover" />
                         </div>
                       `).join("")}
-                      ${fPhotos.length > 10 ? `<div class="aspect-square rounded-lg bg-white/10 flex items-center justify-center text-xs font-semibold text-amber-300">+${fPhotos.length - 10}</div>` : ''}
+                      ${fPhotos.length > 10 ? `<div class="aspect-square rounded-lg bg-white/10 flex items-center justify-center text-xs font-semibold text-amber-400">+${fPhotos.length - 10}</div>` : ''}
                     </div>
                     <p class="text-[10px] text-zinc-400 truncate" title="${escapeHtml(f.photos.join(', '))}">
                       <span class="text-zinc-500">Files:</span> ${escapeHtml(f.photos.join(", "))}
@@ -1314,18 +2034,12 @@
       }
 
       let displayPhotos = allPhotos.map((p, i) => ({ ...p, origIdx: i }));
-      if (activeFilter === "all") {
-        displayPhotos = displayPhotos.filter(p => !hiddenSet.has(p.filename));
-      } else if (activeFilter === "selected") {
+      if (activeFilter === "selected") {
         displayPhotos = displayPhotos.filter(p => selectedSet.has(p.filename));
-      } else if (activeFilter === "unselected") {
-        displayPhotos = displayPhotos.filter(p => !selectedSet.has(p.filename) && !hiddenSet.has(p.filename));
       } else if (activeFilter === "starred") {
         displayPhotos = displayPhotos.filter(p => starredSet.has(p.filename));
       } else if (activeFilter === "notes") {
         displayPhotos = displayPhotos.filter(p => commentsMap[p.filename] && commentsMap[p.filename].trim());
-      } else if (activeFilter === "hidden") {
-        displayPhotos = displayPhotos.filter(p => hiddenSet.has(p.filename));
       }
 
       if (q) {
@@ -1341,38 +2055,20 @@
             ${displayPhotos.map(p => {
               const isSel = selectedSet.has(p.filename);
               const isStar = starredSet.has(p.filename);
-              const isHid = hiddenSet.has(p.filename);
               const isCover = currentGallery.coverUrl === p.url;
               const note = commentsMap[p.filename] || "";
               const inFolders = getPhotoFolders(p.filename);
               return `
-                <div class="relative group bg-zinc-900 rounded-2xl overflow-hidden flex flex-col transition-all duration-200 ${isSel ? 'selected-ring' : 'border border-white/5 hover:border-white/20'} ${isHid ? 'opacity-65' : ''}">
+                <div class="relative group bg-zinc-900 rounded-2xl overflow-hidden flex flex-col transition-all duration-200 ${isSel ? 'selected-ring' : 'border border-white/10 hover:border-amber-400/40'}">
                   <div onclick="handleGridPhotoTap(${p.origIdx}, this)" class="relative overflow-hidden aspect-square cursor-pointer select-none">
                     <img src="${p.url}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition duration-500 pointer-events-none" />
                     ${!locked ? `
-                      <!-- TOP LEFT: STAR (COVER/FRAME) + HIDE/REJECT -->
-                      <div class="absolute top-2 left-2 flex gap-1.5">
-                        <button onclick="toggleStar(${p.origIdx}, event)" title="Mark as Album Cover / Frame" class="w-7 h-7 rounded-full flex items-center justify-center text-xs shadow-xl backdrop-blur-md transition cursor-pointer ${isStar ? 'bg-yellow-400 text-black scale-105' : 'bg-black/55 text-white/80 hover:bg-yellow-400 hover:text-black'}">
-                          ★
-                        </button>
-                        <button onclick="toggleHide(${p.origIdx}, event)" title="${isHid ? 'Restore Photo' : 'Hide / Reject Photo'}" class="w-7 h-7 rounded-full flex items-center justify-center text-xs shadow-xl backdrop-blur-md transition cursor-pointer ${isHid ? 'bg-rose-500 text-white scale-105' : 'bg-black/55 text-white/80 hover:bg-rose-500 hover:text-white'}">
-                          ${isHid ? '↩' : '✕'}
-                        </button>
-                      </div>
-                      <!-- TOP RIGHT: HEART (SELECT) BUTTON -->
+                      <button onclick="toggleStar(${p.origIdx}, event)" title="Mark as Album Cover / Frame" class="absolute top-2 left-2 w-7 h-7 rounded-full flex items-center justify-center text-xs shadow-xl backdrop-blur-md transition cursor-pointer ${isStar ? 'bg-yellow-400 text-black scale-105' : 'bg-black/55 text-white/80 hover:bg-yellow-400 hover:text-black'}">
+                        ★
+                      </button>
                       <button onclick="toggleSelect(${p.origIdx}, event)" title="Select Photo" class="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center text-sm shadow-xl backdrop-blur-md transition cursor-pointer ${isSel ? 'gold-gradient text-black scale-105' : 'bg-black/55 text-white hover:bg-amber-400 hover:text-black'}">
                         ♥
                       </button>
-                      <!-- BOTTOM LEFT: COMMENT + WALL FRAME PREVIEW -->
-                      <div class="absolute bottom-2 left-2 flex gap-1.5">
-                        <button onclick="promptComment(${p.origIdx}, event)" title="Add / Edit Note" class="w-7 h-7 rounded-full flex items-center justify-center text-xs shadow-xl backdrop-blur-md transition cursor-pointer ${note ? 'bg-sky-400 text-black' : 'bg-black/55 text-white/80 hover:bg-sky-400 hover:text-black'}">
-                          💬
-                        </button>
-                        <button onclick="openFramePreview(${p.origIdx}, event)" title="Preview in Wall Frame" class="w-7 h-7 rounded-full flex items-center justify-center text-xs shadow-xl backdrop-blur-md bg-black/55 text-amber-300 hover:bg-amber-400 hover:text-black transition cursor-pointer">
-                          🖼️
-                        </button>
-                      </div>
-                      <!-- BOTTOM RIGHT: ADMIN SET COVER + UNIQUE DELETE OR CLIENT FOLDER -->
                       ${isAdminViewing ? `
                         <div class="absolute bottom-2 right-2 flex gap-1.5">
                           <button onclick="setCoverPhoto(${p.origIdx}, event)" title="Set as Hero Cover Banner" class="px-2 h-7 rounded-full text-[9px] font-semibold uppercase tracking-wider shadow-xl backdrop-blur-md transition cursor-pointer ${isCover ? 'gold-gradient text-black' : 'bg-black/65 text-zinc-200 hover:bg-amber-400 hover:text-black'}">
@@ -1388,24 +2084,20 @@
                         </button>
                       `}
                     ` : `
-                      <!-- LOCKED VIEW BADGES + FRAME PREVIEW -->
                       ${isStar ? `<span class="absolute top-2 left-2 w-7 h-7 rounded-full bg-yellow-400 text-black flex items-center justify-center text-xs shadow-xl">★</span>` : ''}
                       ${isSel ? `<span class="absolute top-2 right-2 w-7 h-7 rounded-full gold-gradient text-black flex items-center justify-center text-xs shadow-xl">♥</span>` : ''}
-                      <button onclick="openFramePreview(${p.origIdx}, event)" title="Preview in Wall Frame" class="absolute bottom-2 right-2 w-7 h-7 rounded-full flex items-center justify-center text-xs shadow-xl backdrop-blur-md bg-black/60 text-amber-300 hover:bg-amber-400 hover:text-black transition cursor-pointer">
-                        🖼️
-                      </button>
                     `}
                   </div>
                   <div class="px-3 py-2 text-[10px] text-zinc-400 bg-zinc-950/90 flex-1 flex flex-col justify-center">
                     <div class="flex items-center justify-between">
                       <span class="truncate">${p.filename}</span>
                       <span class="flex items-center gap-1 ml-1 shrink-0">
-                        ${isStar ? '<span class="text-yellow-300 font-bold">★</span>' : ''}
-                        ${isSel ? '<span class="text-amber-400 font-semibold">✓</span>' : ''}
+                        ${isStar ? '<span class="text-yellow-500 font-bold">★</span>' : ''}
+                        ${isSel ? '<span class="text-amber-500 font-semibold">✓</span>' : ''}
                       </span>
                     </div>
-                    ${inFolders.length ? `<p class="text-[10px] text-emerald-300 mt-0.5 truncate">📁 ${escapeHtml(inFolders.join(", "))}</p>` : ''}
-                    ${note ? `<p class="text-[10px] text-sky-300 mt-0.5 truncate" title="${escapeHtml(note)}">💬 ${escapeHtml(note)}</p>` : ''}
+                    ${inFolders.length ? `<p class="text-[10px] text-emerald-500 mt-0.5 truncate">📁 ${escapeHtml(inFolders.join(", "))}</p>` : ''}
+                    ${note ? `<p class="text-[10px] text-sky-500 mt-0.5 truncate" title="${escapeHtml(note)}">💬 ${escapeHtml(note)}</p>` : ''}
                   </div>
                 </div>
               `;
@@ -1416,21 +2108,19 @@
     function renderClientPhotos() {
       updateClientHeader();
       const allPhotos = currentGallery.photos || [];
-      const visiblePhotos = allPhotos.filter(p => !hiddenSet.has(p.filename));
       const count = selectedSet.size;
-      const hidCount = hiddenSet.size;
-      const unselCount = visiblePhotos.filter(p => !selectedSet.has(p.filename)).length;
       const starCount = starredSet.size;
       const notesCount = allPhotos.filter(p => commentsMap[p.filename] && commentsMap[p.filename].trim()).length;
       const folCount = foldersList.length;
       const limit = currentGallery.maxLimit;
       const pct = Math.min(100, Math.round((count / limit) * 100));
       const locked = isGalleryLocked();
+      const bmIdx = getPhotoBookmark();
 
       document.getElementById("app").innerHTML = `
         ${locked ? `
           <div class="mb-5 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
-            <p class="text-xs text-emerald-300">
+            <p class="text-xs text-emerald-500">
               <span class="font-semibold">🔒 Selection Submitted & Locked.</span> Your final picks have been sent to ${STUDIO_NAME}. Contact studio if you need to unlock for changes.
             </p>
           </div>
@@ -1440,42 +2130,48 @@
         <div class="mb-6 flex flex-col gap-4 pb-5 border-b border-white/10">
           <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div>
-              <p class="text-[11px] uppercase tracking-[0.25em] text-amber-400 mb-1">${isAdminViewing ? 'Admin Gallery Inspector' : 'Photo Selection'}</p>
+              <p class="text-[11px] uppercase tracking-[0.25em] text-amber-500 mb-1">${isAdminViewing ? 'Admin Gallery Inspector' : 'Photo Selection'}</p>
               <h2 class="font-serif-luxury text-2xl sm:text-3xl font-semibold text-white">${currentGallery.name}</h2>
-              <p class="text-[11px] text-zinc-400 mt-1">${locked ? 'View-only mode • Tap 🖼️ on any photo for Wall Frame Preview' : 'Double-tap to Select &bull; <span class="text-amber-300">🖼️</span> Wall Frame Preview &bull; <span class="text-emerald-300">📁</span> Put in Folder'}</p>
+              <p class="text-[11px] text-zinc-400 mt-1">${locked ? 'View-only mode • Tap any photo to preview or view in Wall Frame' : 'Tap any photo for full view, Notes & Frame Preview &bull; Double-tap to Select'}</p>
               <div class="mt-3 w-full sm:w-64 h-1.5 bg-white/10 rounded-full overflow-hidden">
                 <div class="h-full gold-gradient transition-all duration-300" style="width: ${pct}%"></div>
               </div>
             </div>
-            ${!locked ? `
-              <button onclick="openFolderModal()" class="bg-emerald-500/20 hover:bg-emerald-500/35 text-emerald-200 border border-emerald-500/40 text-xs font-semibold px-4 py-2.5 rounded-xl transition cursor-pointer w-fit">
-                📁 + Create Folder
-              </button>
-            ` : ''}
+            <div class="flex flex-wrap items-center gap-2">
+              ${!locked ? `
+                <button onclick="openSpeedMode()" class="gold-gradient text-black font-semibold text-xs px-4 py-2.5 rounded-xl shadow-lg shadow-amber-500/20 hover:opacity-90 transition cursor-pointer flex items-center gap-1.5">
+                  <span>⚡</span> <span>Speed Mode</span>
+                </button>
+              ` : ''}
+              ${bmIdx > 0 ? `
+                <button onclick="openLightbox(${bmIdx})" class="bg-amber-500/15 hover:bg-amber-500/30 text-amber-500 border border-amber-500/35 text-xs font-semibold px-4 py-2.5 rounded-xl transition cursor-pointer flex items-center gap-1.5">
+                  <span>🔖</span> <span>Resume #${bmIdx + 1}</span>
+                </button>
+              ` : ''}
+              ${!locked ? `
+                <button onclick="openFolderModal()" class="bg-emerald-500/20 hover:bg-emerald-500/35 text-emerald-500 border border-emerald-500/40 text-xs font-semibold px-4 py-2.5 rounded-xl transition cursor-pointer w-fit">
+                  📁 + Folder
+                </button>
+              ` : ''}
+            </div>
           </div>
 
           <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
             <div class="flex flex-wrap items-center gap-1.5 bg-white/5 p-1 rounded-xl border border-white/10 w-fit">
-              <button onclick="setFilter('all')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'all' ? 'bg-white text-black' : 'text-zinc-400 hover:text-white'}">
-                All (${visiblePhotos.length})
+              <button onclick="setFilter('all')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'all' ? 'bg-zinc-900 text-white shadow' : 'text-zinc-400 hover:text-amber-500'}">
+                All (${allPhotos.length})
               </button>
-              <button onclick="setFilter('selected')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'selected' ? 'gold-gradient text-black font-semibold' : 'text-zinc-400 hover:text-white'}">
+              <button onclick="setFilter('selected')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'selected' ? 'gold-gradient text-black font-semibold' : 'text-zinc-400 hover:text-amber-500'}">
                 ♥ Selected (${count})
               </button>
-              <button onclick="setFilter('unselected')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'unselected' ? 'bg-zinc-200 text-black font-semibold' : 'text-zinc-400 hover:text-white'}">
-                Unselected (${unselCount})
-              </button>
-              <button onclick="setFilter('folders')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'folders' ? 'bg-emerald-400 text-black font-semibold' : 'text-zinc-400 hover:text-white'}">
+              <button onclick="setFilter('folders')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'folders' ? 'bg-emerald-400 text-black font-semibold' : 'text-zinc-400 hover:text-amber-500'}">
                 📁 Folders (${folCount})
               </button>
-              <button onclick="setFilter('starred')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'starred' ? 'bg-yellow-400 text-black font-semibold' : 'text-zinc-400 hover:text-white'}">
+              <button onclick="setFilter('starred')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'starred' ? 'bg-yellow-400 text-black font-semibold' : 'text-zinc-400 hover:text-amber-500'}">
                 ★ Covers (${starCount})
               </button>
-              <button onclick="setFilter('notes')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'notes' ? 'bg-sky-400 text-black font-semibold' : 'text-zinc-400 hover:text-white'}">
+              <button onclick="setFilter('notes')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'notes' ? 'bg-sky-400 text-black font-semibold' : 'text-zinc-400 hover:text-amber-500'}">
                 💬 Notes (${notesCount})
-              </button>
-              <button onclick="setFilter('hidden')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'hidden' ? 'bg-rose-500 text-white font-semibold' : 'text-zinc-400 hover:text-white'}">
-                ✕ Hidden (${hidCount})
               </button>
             </div>
 
@@ -1483,7 +2179,7 @@
             <div class="relative w-full lg:w-64">
               <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 text-xs pointer-events-none">🔍</span>
               <input id="photoSearchInput" type="text" value="${escapeHtml(searchQuery)}" oninput="handlePhotoSearch(this.value)" placeholder="Search photo number (e.g. 4521)..." class="w-full bg-black/50 border border-white/15 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-zinc-500 outline-none focus:border-amber-400 transition" />
-              <button id="clearSearchBtn" onclick="clearPhotoSearch()" class="${searchQuery.trim() ? '' : 'hidden'} absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white text-xs cursor-pointer">✕</button>
+              <button id="clearSearchBtn" onclick="clearPhotoSearch()" class="${searchQuery.trim() ? '' : 'hidden'} absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-amber-500 text-xs cursor-pointer">✕</button>
             </div>
           </div>
         </div>
@@ -1500,27 +2196,27 @@
       if (isAdminViewing) {
         document.getElementById("headerActions").innerHTML = `
           <div class="bg-white/5 border border-white/10 px-3 py-1.5 rounded-full text-xs font-medium">
-            <span class="text-amber-400 font-bold">${count}</span> <span class="text-zinc-400">/ ${limit}</span>
+            <span class="text-amber-500 font-bold">${count}</span> <span class="text-zinc-400">/ ${limit}</span>
           </div>
-          <button onclick="backToAdminDashboard()" class="bg-white/10 hover:bg-white/20 text-white text-xs font-medium px-4 py-1.5 rounded-full transition cursor-pointer">
-            ← Back to Dashboard
+          <button onclick="backToAdminDashboard()" class="bg-white/10 hover:bg-white/20 border border-white/15 text-xs font-medium px-3.5 py-1.5 rounded-full transition cursor-pointer">
+            ← Dashboard
           </button>
         `;
       } else if (isGalleryLocked()) {
         document.getElementById("headerActions").innerHTML = `
           <div class="bg-white/5 border border-white/10 px-3 py-1.5 rounded-full text-xs font-medium">
-            <span class="text-amber-400 font-bold">${count}</span> <span class="text-zinc-400">/ ${limit}</span>
+            <span class="text-amber-500 font-bold">${count}</span> <span class="text-zinc-400">/ ${limit}</span>
           </div>
-          <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-semibold px-3.5 py-1.5 rounded-full flex items-center gap-1.5">
+          <span class="bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1">
             🔒 Locked
           </span>
         `;
       } else {
         document.getElementById("headerActions").innerHTML = `
           <div class="bg-white/5 border border-white/10 px-3 py-1.5 rounded-full text-xs font-medium">
-            <span class="text-amber-400 font-bold">${count}</span> <span class="text-zinc-400">/ ${limit}</span>
+            <span class="text-amber-500 font-bold">${count}</span> <span class="text-zinc-400">/ ${limit}</span>
           </div>
-          <button onclick="submitSelection()" class="bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-bold px-4 py-1.5 rounded-full shadow-lg shadow-emerald-500/20 transition cursor-pointer flex items-center gap-1.5">
+          <button onclick="submitSelection()" class="bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-bold px-3.5 py-1.5 rounded-full shadow-lg shadow-emerald-500/20 transition cursor-pointer flex items-center gap-1">
             <span>✓</span> <span>Selected</span>
           </button>
         `;
@@ -1533,18 +2229,20 @@
       const filename = currentGallery.photos[idx].filename;
       if (selectedSet.has(filename)) {
         selectedSet.delete(filename);
+        playFeedbackSound("unselect");
+        triggerHaptic("unselect");
       } else {
         if (!isAdminViewing && selectedSet.size >= currentGallery.maxLimit) {
           alert(`You have reached the maximum limit of ${currentGallery.maxLimit} photos.`);
           return;
         }
         selectedSet.add(filename);
-        hiddenSet.delete(filename);
+        playFeedbackSound("select");
+        triggerHaptic("select");
       }
       renderClientPhotos();
       await updateDoc(doc(db, "galleries", currentGallery.id), {
-        selected: Array.from(selectedSet),
-        hidden: Array.from(hiddenSet)
+        selected: Array.from(selectedSet)
       });
     };
 
@@ -1563,42 +2261,6 @@
       });
     };
 
-    window.toggleHide = async (idx, e) => {
-      if (e) e.stopPropagation();
-      if (isGalleryLocked()) return;
-      const filename = currentGallery.photos[idx].filename;
-      if (hiddenSet.has(filename)) {
-        hiddenSet.delete(filename);
-      } else {
-        hiddenSet.add(filename);
-        selectedSet.delete(filename);
-      }
-      renderClientPhotos();
-      await updateDoc(doc(db, "galleries", currentGallery.id), {
-        hidden: Array.from(hiddenSet),
-        selected: Array.from(selectedSet)
-      });
-    };
-
-    window.promptComment = async (idx, e) => {
-      if (e) e.stopPropagation();
-      if (isGalleryLocked()) return;
-      const filename = currentGallery.photos[idx].filename;
-      const existing = commentsMap[filename] || "";
-      const note = prompt(`Add a note / retouching comment for ${filename}:`, existing);
-      if (note === null) return;
-      const trimmed = note.trim();
-      if (trimmed) {
-        commentsMap[filename] = trimmed;
-      } else {
-        delete commentsMap[filename];
-      }
-      renderClientPhotos();
-      await updateDoc(doc(db, "galleries", currentGallery.id), {
-        comments: commentsMap
-      });
-    };
-
     window.deleteSinglePhoto = async (idx, e) => {
       if (e) e.stopPropagation();
       if (!isAdminViewing) return;
@@ -1608,7 +2270,6 @@
       currentGallery.photos.splice(idx, 1);
       selectedSet.delete(photo.filename);
       starredSet.delete(photo.filename);
-      hiddenSet.delete(photo.filename);
       delete commentsMap[photo.filename];
       foldersList.forEach(f => {
         f.photos = (f.photos || []).filter(fn => fn !== photo.filename);
@@ -1618,7 +2279,6 @@
         photos: currentGallery.photos,
         selected: Array.from(selectedSet),
         starred: Array.from(starredSet),
-        hidden: Array.from(hiddenSet),
         comments: commentsMap,
         folders: foldersList
       });
@@ -1642,7 +2302,6 @@
       await updateDoc(doc(db, "galleries", currentGallery.id), {
         selected: Array.from(selectedSet),
         starred: Array.from(starredSet),
-        hidden: Array.from(hiddenSet),
         comments: commentsMap,
         folders: foldersList,
         submitted: true,
@@ -1669,6 +2328,12 @@
 
       const waUrl = `https://wa.me/${STUDIO_WHATSAPP_NUMBER}?text=${encodeURIComponent(waMsg)}`;
 
+      document.querySelectorAll(".review-star").forEach(s => {
+        s.classList.add("text-zinc-600");
+        s.classList.remove("text-amber-400");
+      });
+      document.getElementById("reviewFeedbackMsg").classList.add("hidden");
+
       document.getElementById("submitSummaryText").innerText =
         `Your selection (${selectedSet.size} photos, ${foldersList.length} folder(s)) is now locked. Tap below to alert ${STUDIO_NAME} on WhatsApp.`;
       document.getElementById("whatsappAlertLink").href = waUrl;
@@ -1679,35 +2344,49 @@
     };
 
     // =========================================================
-    // LIGHTBOX + KEYBOARD + MOBILE SWIPE SUPPORT
+    // LIGHTBOX + KEYBOARD + MOBILE 4-WAY SWIPE SUPPORT
     // =========================================================
     window.openLightbox = (idx) => {
       lightboxIndex = idx;
+      savePhotoBookmark(idx);
+      resetLightboxZoom();
       updateLightboxUI();
       document.getElementById("lightbox").classList.remove("hidden");
       document.getElementById("lightbox").classList.add("flex");
     };
 
     window.closeLightbox = () => {
+      resetLightboxZoom();
       document.getElementById("lightbox").classList.add("hidden");
       document.getElementById("lightbox").classList.remove("flex");
+      renderClientPhotos();
     };
 
     window.prevPhoto = () => {
       if (!currentGallery.photos.length) return;
+      resetLightboxZoom();
       lightboxIndex = (lightboxIndex - 1 + currentGallery.photos.length) % currentGallery.photos.length;
+      savePhotoBookmark(lightboxIndex);
       updateLightboxUI();
     };
 
     window.nextPhoto = () => {
       if (!currentGallery.photos.length) return;
+      resetLightboxZoom();
       lightboxIndex = (lightboxIndex + 1) % currentGallery.photos.length;
+      savePhotoBookmark(lightboxIndex);
       updateLightboxUI();
     };
 
     window.toggleCurrentLightboxSelect = async () => {
       if (isGalleryLocked()) return;
+      const wasSelected = selectedSet.has(currentGallery.photos[lightboxIndex].filename);
       await window.toggleSelect(lightboxIndex);
+      if (wasSelected) {
+        showUnselectPopup(document.getElementById("lightboxImgWrap"));
+      } else {
+        showRedHeart(document.getElementById("lightboxImgWrap"));
+      }
       updateLightboxUI();
     };
 
@@ -1715,17 +2394,6 @@
       if (isGalleryLocked()) return;
       await window.toggleStar(lightboxIndex);
       updateLightboxUI();
-    };
-
-    window.toggleCurrentLightboxHide = async () => {
-      if (isGalleryLocked()) return;
-      const wasHidden = hiddenSet.has(currentGallery.photos[lightboxIndex].filename);
-      await window.toggleHide(lightboxIndex);
-      if (!wasHidden) {
-        window.nextPhoto();
-      } else {
-        updateLightboxUI();
-      }
     };
 
     window.saveLightboxComment = async () => {
@@ -1752,11 +2420,21 @@
         if (lightboxIndex >= currentGallery.photos.length) {
           lightboxIndex = currentGallery.photos.length - 1;
         }
+        resetLightboxZoom();
         updateLightboxUI();
       }
     };
 
     document.addEventListener("keydown", (e) => {
+      const sm = document.getElementById("speedModal");
+      if (!sm.classList.contains("hidden")) {
+        if (e.key === "Escape") window.closeSpeedMode();
+        if (e.key === "ArrowRight") window.triggerSpeedAction("select");
+        if (e.key === "ArrowLeft") window.triggerSpeedAction("skip");
+        if (e.key === "ArrowUp") window.triggerSpeedAction("cover");
+        if (e.key.toLowerCase() === "z") window.undoSpeedAction();
+        return;
+      }
       const fm = document.getElementById("framePreviewModal");
       if (!fm.classList.contains("hidden")) {
         if (e.key === "Escape") window.closeFramePreview();
@@ -1773,19 +2451,46 @@
       if (e.key === "ArrowRight") window.nextPhoto();
     });
 
-    // --- MOBILE TOUCH SWIPE ---
+    // --- MOBILE 4-WAY TOUCH SWIPE (ONLY WHEN ZOOM IS 1x) ---
     let touchStartX = 0;
+    let touchStartY = 0;
     const lbEl = document.getElementById("lightbox");
     lbEl.addEventListener("touchstart", (e) => {
+      if (zoomLevel > 1) return;
       touchStartX = e.changedTouches[0].screenX;
+      touchStartY = e.changedTouches[0].screenY;
     }, { passive: true });
 
-    lbEl.addEventListener("touchend", (e) => {
+    lbEl.addEventListener("touchend", async (e) => {
+      if (zoomLevel > 1) return;
+      if (e.target && e.target.tagName === "INPUT") return;
       const touchEndX = e.changedTouches[0].screenX;
-      const diff = touchStartX - touchEndX;
-      if (Math.abs(diff) > 50) {
-        if (diff > 0) window.nextPhoto();
-        else window.prevPhoto();
+      const touchEndY = e.changedTouches[0].screenY;
+      const diffX = touchStartX - touchEndX;
+      const diffY = touchStartY - touchEndY;
+
+      if (Math.abs(diffX) > Math.abs(diffY)) {
+        if (Math.abs(diffX) > 50) {
+          if (diffX > 0) window.nextPhoto();
+          else window.prevPhoto();
+        }
+      } else {
+        if (Math.abs(diffY) > 60 && !isGalleryLocked()) {
+          const wrap = document.getElementById("lightboxImgWrap");
+          if (diffY > 0) {
+            playFeedbackSound("select");
+            triggerHaptic("select");
+            showRedHeart(wrap);
+            await selectPhotoOnly(lightboxIndex, false);
+            updateLightboxUI();
+          } else {
+            playFeedbackSound("unselect");
+            triggerHaptic("unselect");
+            showUnselectPopup(wrap);
+            await unselectPhotoOnly(lightboxIndex);
+            updateLightboxUI();
+          }
+        }
       }
     }, { passive: true });
 
@@ -1813,16 +2518,13 @@
 
       const selBtn = document.getElementById("lightboxSelectBtn");
       const starBtn = document.getElementById("lightboxStarBtn");
-      const hideBtn = document.getElementById("lightboxHideBtn");
 
       if (locked) {
         selBtn.classList.add("hidden");
         starBtn.classList.add("hidden");
-        hideBtn.classList.add("hidden");
       } else {
         selBtn.classList.remove("hidden");
         starBtn.classList.remove("hidden");
-        hideBtn.classList.remove("hidden");
 
         if (selectedSet.has(p.filename)) {
           selBtn.innerText = "♥ Selected";
@@ -1838,14 +2540,6 @@
         } else {
           starBtn.innerText = "★ Cover / Frame";
           starBtn.className = "px-4 py-2 rounded-full font-semibold text-xs uppercase tracking-wider bg-white/10 hover:bg-yellow-400 hover:text-black text-white transition cursor-pointer";
-        }
-
-        if (hiddenSet.has(p.filename)) {
-          hideBtn.innerText = "↩ Unhide";
-          hideBtn.className = "px-3.5 py-2 rounded-full font-semibold text-xs uppercase tracking-wider bg-rose-500 text-white transition cursor-pointer";
-        } else {
-          hideBtn.innerText = "✕ Hide";
-          hideBtn.className = "px-3.5 py-2 rounded-full font-semibold text-xs uppercase tracking-wider bg-white/10 hover:bg-rose-500 hover:text-white text-zinc-200 transition cursor-pointer";
         }
       }
     }
