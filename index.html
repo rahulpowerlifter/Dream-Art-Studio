@@ -29,21 +29,63 @@
     .selected-ring {
       box-shadow: 0 0 0 2px #d4af37, 0 10px 25px -5px rgba(212, 175, 55, 0.35);
     }
-    @keyframes heartPop {
-      0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
-      25% { transform: translate(-50%, -50%) scale(1.25); opacity: 1; }
-      55% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-      100% { transform: translate(-50%, -50%) scale(1.35); opacity: 0; }
-    }
-    .heart-pop {
+
+    /* --- INSTAGRAM STYLE HEART + SPARKLE BURST --- */
+    .ig-heart-container {
       position: absolute;
       top: 50%;
       left: 50%;
-      font-size: 4rem;
+      transform: translate(-50%, -50%);
       pointer-events: none;
-      z-index: 30;
-      filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.55));
-      animation: heartPop 0.75s cubic-bezier(0.17, 0.89, 0.32, 1.49) forwards;
+      z-index: 40;
+      width: 110px;
+      height: 110px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    @keyframes igHeartPop {
+      0%   { transform: scale(0) rotate(-18deg); opacity: 0; }
+      22%  { transform: scale(1.28) rotate(-8deg); opacity: 1; }
+      45%  { transform: scale(0.95) rotate(6deg); opacity: 1; }
+      68%  { transform: scale(1.08) rotate(-3deg); opacity: 1; }
+      100% { transform: scale(0.85) translateY(-18px) rotate(0deg); opacity: 0; }
+    }
+    .ig-heart-svg {
+      width: 88px;
+      height: 88px;
+      filter: drop-shadow(0 0 22px rgba(16, 185, 129, 0.75)) drop-shadow(0 8px 16px rgba(0, 0, 0, 0.5));
+      animation: igHeartPop 0.72s cubic-bezier(0.17, 0.89, 0.32, 1.49) forwards;
+    }
+    @keyframes sparkleOut {
+      0%   { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+      60%  { opacity: 1; }
+      100% { transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(1.1); opacity: 0; }
+    }
+    .ig-sparkle {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 8px;
+      height: 8px;
+      border-radius: 9999px;
+      background: #6ee7b7;
+      box-shadow: 0 0 10px #34d399;
+      animation: sparkleOut 0.65s ease-out forwards;
+    }
+
+    /* --- SMOOTH LIGHTBOX SLIDE --- */
+    #lightboxImg {
+      transition: transform 0.24s ease, opacity 0.24s ease;
+    }
+    .slide-out-left {
+      transform: translateX(-65px) scale(0.96);
+      opacity: 0;
+    }
+    .slide-in-right {
+      transform: translateX(65px) scale(0.96);
+      opacity: 0;
+      transition: none !important;
     }
   </style>
 </head>
@@ -65,9 +107,9 @@
   <main id="app" class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6"></main>
 
   <!-- LIGHTBOX MODAL -->
-  <div id="lightbox" class="fixed inset-0 z-50 bg-black/95 backdrop-blur-md hidden flex-col items-center justify-center p-4">
+  <div id="lightbox" class="fixed inset-0 z-50 bg-black/95 backdrop-blur-md hidden flex-col items-center justify-center p-4 overflow-hidden">
     <button onclick="closeLightbox()" class="absolute top-4 right-4 text-zinc-300 hover:text-white bg-white/10 hover:bg-white/20 px-3.5 py-1.5 rounded-full text-xs tracking-wider uppercase transition cursor-pointer">✕ Close</button>
-    <div id="lightboxImgWrap" onclick="handleLightboxTap()" class="relative flex items-center justify-center cursor-pointer">
+    <div id="lightboxImgWrap" onclick="handleLightboxTap()" class="relative flex items-center justify-center cursor-pointer select-none">
       <img id="lightboxImg" src="" class="max-h-[65vh] max-w-[94vw] object-contain rounded-lg shadow-2xl select-none" />
     </div>
     <div class="mt-4 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
@@ -85,6 +127,115 @@
     <p id="lightboxFilename" class="mt-2.5 text-xs text-zinc-400 tracking-wide"></p>
   </div>
 
+  <!-- FOLDER BUILDER MODAL -->
+  <div id="folderModal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden items-center justify-center p-3 sm:p-6 overflow-y-auto">
+    <div class="bg-zinc-950 border border-white/15 rounded-3xl max-w-4xl w-full max-h-[92vh] flex flex-col overflow-hidden shadow-2xl">
+      <div class="px-5 py-4 border-b border-white/10 flex items-center justify-between">
+        <div>
+          <h3 id="folderModalTitle" class="font-serif-luxury text-base sm:text-lg font-semibold text-white">📁 Create Custom Folder</h3>
+          <p class="text-[11px] text-zinc-400">Name your folder and pick photos to group inside it</p>
+        </div>
+        <button onclick="closeFolderModal()" class="text-zinc-400 hover:text-white bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full text-xs cursor-pointer">✕ Close</button>
+      </div>
+
+      <div class="p-5 overflow-y-auto space-y-4 flex-1">
+        <div>
+          <label class="text-[11px] uppercase tracking-wider text-zinc-400 block mb-1.5">Folder Name</label>
+          <input id="folderNameInput" type="text" placeholder="e.g. Reception, Muhurtham, Couple Shots, Family..." class="w-full bg-black/60 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white placeholder-zinc-500 outline-none focus:border-amber-400 transition" />
+        </div>
+
+        <div>
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+            <label class="text-[11px] uppercase tracking-wider text-amber-400">Picked Photos: <span id="folderCountBadge">0</span></label>
+            <div class="flex flex-wrap items-center gap-2">
+              <button onclick="addAllSelectedToFolder()" class="text-[11px] bg-amber-500/15 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 px-2.5 py-1 rounded-lg cursor-pointer">+ Add All ♥ Selected</button>
+              <button onclick="clearFolderDraft()" class="text-[11px] text-zinc-400 hover:text-red-400 px-2 py-1 cursor-pointer">Clear</button>
+              <div class="flex gap-1 bg-white/5 p-0.5 rounded-lg border border-white/10">
+                <button onclick="setFolderPickerFilter('selected')" id="fpFilter-selected" class="px-2.5 py-1 rounded-md text-[11px] cursor-pointer">♥ Selected</button>
+                <button onclick="setFolderPickerFilter('all')" id="fpFilter-all" class="px-2.5 py-1 rounded-md text-[11px] cursor-pointer">All Photos</button>
+              </div>
+            </div>
+          </div>
+          <div id="folderPickerGrid" class="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 gap-2 max-h-80 overflow-y-auto pr-1"></div>
+        </div>
+      </div>
+
+      <div class="px-5 py-3.5 border-t border-white/10 flex items-center justify-between bg-zinc-950">
+        <p class="text-[11px] text-zinc-400">Photos added here are automatically marked as ♥ Selected too</p>
+        <button onclick="saveFolder()" class="gold-gradient text-black font-semibold text-xs px-6 py-2.5 rounded-xl hover:opacity-90 transition cursor-pointer">Save Folder</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- COLLAGE BUILDER MODAL -->
+  <div id="collageModal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden items-center justify-center p-3 sm:p-6 overflow-y-auto">
+    <div class="bg-zinc-950 border border-white/15 rounded-3xl max-w-4xl w-full max-h-[92vh] flex flex-col overflow-hidden shadow-2xl">
+      <div class="px-5 py-4 border-b border-white/10 flex items-center justify-between">
+        <div>
+          <h3 class="font-serif-luxury text-base sm:text-lg font-semibold text-white">🧩 Create Photo Collage</h3>
+          <p class="text-[11px] text-zinc-400">Select up to 8 photos & choose how you want them arranged</p>
+        </div>
+        <button onclick="closeCollageModal()" class="text-zinc-400 hover:text-white bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full text-xs cursor-pointer">✕ Close</button>
+      </div>
+
+      <div class="p-5 overflow-y-auto space-y-5 flex-1">
+        <div class="grid md:grid-cols-2 gap-5 items-start">
+          <div>
+            <label class="text-[11px] uppercase tracking-wider text-zinc-400 block mb-2">1. Choose Layout Lines</label>
+            <div class="grid grid-cols-2 gap-2 mb-4">
+              <button onclick="setCollageLayout('4x2')" id="layBtn-4x2" class="collage-lay-btn px-3 py-2 rounded-xl text-xs border transition cursor-pointer">4 × 2 (2 Lines)</button>
+              <button onclick="setCollageLayout('2x4')" id="layBtn-2x4" class="collage-lay-btn px-3 py-2 rounded-xl text-xs border transition cursor-pointer">2 × 4 (4 Lines)</button>
+              <button onclick="setCollageLayout('hero')" id="layBtn-hero" class="collage-lay-btn px-3 py-2 rounded-xl text-xs border transition cursor-pointer">1 Big + 7 Small</button>
+              <button onclick="setCollageLayout('323')" id="layBtn-323" class="collage-lay-btn px-3 py-2 rounded-xl text-xs border transition cursor-pointer">3 - 2 - 3 Lines</button>
+            </div>
+
+            <label class="text-[11px] uppercase tracking-wider text-zinc-400 block mb-1.5">2. Collage Note / Instruction</label>
+            <input id="collageNoteInput" type="text" placeholder="e.g. Reception Collage - Center la couple photo perusa podunga" class="w-full bg-black/60 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-500 outline-none focus:border-amber-400 transition" />
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <label class="text-[11px] uppercase tracking-wider text-amber-400">Live Preview (<span id="collageCountBadge">0</span> / 8)</label>
+              <button onclick="clearCollageSelection()" class="text-[11px] text-zinc-400 hover:text-red-400 cursor-pointer">Clear All</button>
+            </div>
+            <div id="collageLivePreview" class="bg-zinc-900/90 border border-white/10 rounded-2xl p-2.5 min-h-[180px] flex items-center justify-center">
+              <p class="text-xs text-zinc-500">Tap photos below to preview your collage</p>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-2.5">
+            <label class="text-[11px] uppercase tracking-wider text-zinc-400">3. Pick Photos (Order matters: 1 to 8)</label>
+            <div class="flex gap-1.5 bg-white/5 p-0.5 rounded-lg border border-white/10">
+              <button onclick="setCollagePickerFilter('all')" id="cpFilter-all" class="px-2.5 py-1 rounded-md text-[11px] cursor-pointer">All</button>
+              <button onclick="setCollagePickerFilter('selected')" id="cpFilter-selected" class="px-2.5 py-1 rounded-md text-[11px] cursor-pointer">♥ Selected Only</button>
+            </div>
+          </div>
+          <div id="collagePickerGrid" class="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 gap-2 max-h-60 overflow-y-auto pr-1"></div>
+        </div>
+      </div>
+
+      <div class="px-5 py-3.5 border-t border-white/10 flex items-center justify-between bg-zinc-950">
+        <p class="text-[11px] text-zinc-400">Tip: First photo you pick goes to Slot #1</p>
+        <button onclick="saveCollageRequest()" class="gold-gradient text-black font-semibold text-xs px-6 py-2.5 rounded-xl hover:opacity-90 transition cursor-pointer">Save Collage Request</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- WHATSAPP SUBMIT CONFIRMATION MODAL -->
+  <div id="submitSuccessModal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="bg-zinc-950 border border-emerald-500/30 rounded-3xl max-w-sm w-full p-7 text-center shadow-2xl">
+      <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-3xl text-emerald-400">✓</div>
+      <h3 class="font-serif-luxury text-xl font-semibold text-white mb-2">Selection Saved!</h3>
+      <p id="submitSummaryText" class="text-xs text-zinc-400 leading-relaxed mb-6"></p>
+      <a id="whatsappAlertLink" href="#" target="_blank" onclick="closeSubmitModal()" class="block w-full bg-emerald-500 hover:bg-emerald-400 text-black font-semibold py-3 rounded-xl text-sm transition mb-3">
+        📲 Send WhatsApp Alert to Studio
+      </a>
+      <button onclick="closeSubmitModal()" class="text-xs text-zinc-500 hover:text-white transition cursor-pointer">Close</button>
+    </div>
+  </div>
+
   <!-- APP LOGIC -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -95,6 +246,7 @@
     // =========================================================
     const STUDIO_NAME = "DREAM ART STUDIO";
     const STUDIO_LOGO_URL = "https://res.cloudinary.com/cmaowgef/image/upload/v1795406490/Da_2_Dream_art_studio.png";
+    const STUDIO_WHATSAPP_NUMBER = "918489316333";
     const ADMIN_PASSWORD = "anbeshivam@1";
 
     const CLOUDINARY_CLOUD_NAME = "cmaowgef";
@@ -129,8 +281,10 @@
     let selectedSet = new Set();
     let starredSet = new Set();
     let commentsMap = {};
+    let collagesList = [];
+    let foldersList = [];
     let lightboxIndex = 0;
-    let activeFilter = "all"; // "all", "selected", "unselected", "starred", "notes"
+    let activeFilter = "all"; // "all", "selected", "unselected", "starred", "notes", "folders", "collages"
     let addMoreTargetId = null;
     let isAdminViewing = false;
 
@@ -139,6 +293,17 @@
     let lastTapIdx = -1;
     let singleTapTimer = null;
     let lastLightboxTap = 0;
+    let isAutoSliding = false;
+
+    // Collage Builder state
+    let collageDraftPhotos = [];
+    let collageDraftLayout = "4x2";
+    let collagePickerFilter = "all";
+
+    // Folder Builder state
+    let editingFolderId = null;
+    let folderDraftSet = new Set();
+    let folderPickerFilter = "selected";
 
     function escapeHtml(str) {
       return String(str || "").replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
@@ -150,16 +315,412 @@
         : `<div class="w-12 h-12 mx-auto mb-4 rounded-full gold-gradient flex items-center justify-center text-black font-serif-luxury font-bold text-xl shadow-lg">D</div>`;
     }
 
+    function getPhotoFolders(filename) {
+      return foldersList.filter(f => (f.photos || []).includes(filename)).map(f => f.name);
+    }
+
     // =========================================================
-    // GREEN HEART POPUP ANIMATION (INSTAGRAM STYLE)
+    // CUSTOM FOLDER BUILDER FUNCTIONS
+    // =========================================================
+    window.openFolderModal = (editId = null, preselectFilename = null) => {
+      editingFolderId = editId;
+      folderDraftSet = new Set();
+      folderPickerFilter = selectedSet.size > 0 ? "selected" : "all";
+
+      if (editId !== null) {
+        const f = foldersList.find(item => item.id === editId);
+        if (f) {
+          document.getElementById("folderModalTitle").innerText = `📁 Edit Folder: ${f.name}`;
+          document.getElementById("folderNameInput").value = f.name;
+          (f.photos || []).forEach(fn => folderDraftSet.add(fn));
+        }
+      } else {
+        document.getElementById("folderModalTitle").innerText = "📁 Create Custom Folder";
+        document.getElementById("folderNameInput").value = "";
+        if (preselectFilename) {
+          folderDraftSet.add(preselectFilename);
+          folderPickerFilter = "all";
+        }
+      }
+
+      document.getElementById("folderModal").classList.remove("hidden");
+      document.getElementById("folderModal").classList.add("flex");
+      updateFolderModalUI();
+    };
+
+    window.closeFolderModal = () => {
+      document.getElementById("folderModal").classList.add("hidden");
+      document.getElementById("folderModal").classList.remove("flex");
+    };
+
+    window.setFolderPickerFilter = (f) => {
+      folderPickerFilter = f;
+      updateFolderModalUI();
+    };
+
+    window.clearFolderDraft = () => {
+      folderDraftSet.clear();
+      updateFolderModalUI();
+    };
+
+    window.addAllSelectedToFolder = () => {
+      selectedSet.forEach(fn => folderDraftSet.add(fn));
+      updateFolderModalUI();
+    };
+
+    window.toggleFolderDraftPhoto = (origIdx) => {
+      const filename = currentGallery.photos[origIdx].filename;
+      if (folderDraftSet.has(filename)) {
+        folderDraftSet.delete(filename);
+      } else {
+        folderDraftSet.add(filename);
+      }
+      updateFolderModalUI();
+    };
+
+    function updateFolderModalUI() {
+      ["selected", "all"].forEach(f => {
+        const btn = document.getElementById(`fpFilter-${f}`);
+        btn.className = f === folderPickerFilter
+          ? "px-2.5 py-1 rounded-md text-[11px] bg-white text-black font-semibold cursor-pointer"
+          : "px-2.5 py-1 rounded-md text-[11px] text-zinc-400 hover:text-white cursor-pointer";
+      });
+
+      document.getElementById("folderCountBadge").innerText = folderDraftSet.size;
+
+      const allPhotos = (currentGallery.photos || []).map((p, i) => ({ ...p, origIdx: i }));
+      const list = folderPickerFilter === "selected"
+        ? allPhotos.filter(p => selectedSet.has(p.filename))
+        : allPhotos;
+
+      const gridEl = document.getElementById("folderPickerGrid");
+      if (list.length === 0) {
+        gridEl.innerHTML = `<p class="col-span-full text-center text-xs text-zinc-500 py-8">${folderPickerFilter === 'selected' ? 'No ♥ Selected photos yet. Switch to "All Photos" tab above.' : 'No photos in gallery.'}</p>`;
+        return;
+      }
+
+      gridEl.innerHTML = list.map(p => {
+        const isPicked = folderDraftSet.has(p.filename);
+        return `
+          <div onclick="toggleFolderDraftPhoto(${p.origIdx})" class="relative aspect-square rounded-xl overflow-hidden cursor-pointer border-2 transition ${isPicked ? 'border-emerald-400 scale-[0.97]' : 'border-transparent hover:border-white/30'}">
+            <img src="${p.url}" loading="lazy" class="w-full h-full object-cover" />
+            ${isPicked ? `<div class="absolute inset-0 bg-emerald-500/25 flex items-center justify-center"><span class="w-7 h-7 rounded-full bg-emerald-400 text-black font-bold text-sm flex items-center justify-center shadow-lg">✓</span></div>` : ''}
+          </div>
+        `;
+      }).join("");
+    }
+
+    window.saveFolder = async () => {
+      const name = document.getElementById("folderNameInput").value.trim();
+      if (!name) {
+        alert("Please enter a folder name (e.g. Reception, Family, Album 1).");
+        return;
+      }
+      if (folderDraftSet.size === 0) {
+        alert("Please pick at least 1 photo for this folder.");
+        return;
+      }
+
+      const photoNames = Array.from(folderDraftSet);
+
+      // Auto-select photos added to folder if within limit
+      photoNames.forEach(fn => {
+        if (!selectedSet.has(fn) && (isAdminViewing || selectedSet.size < currentGallery.maxLimit)) {
+          selectedSet.add(fn);
+        }
+      });
+
+      if (editingFolderId !== null) {
+        const idx = foldersList.findIndex(f => f.id === editingFolderId);
+        if (idx > -1) {
+          foldersList[idx].name = name;
+          foldersList[idx].photos = photoNames;
+        }
+      } else {
+        foldersList.push({
+          id: Date.now(),
+          name,
+          photos: photoNames
+        });
+      }
+
+      await updateDoc(doc(db, "galleries", currentGallery.id), {
+        folders: foldersList,
+        selected: Array.from(selectedSet)
+      });
+
+      window.closeFolderModal();
+      activeFilter = "folders";
+      renderClientPhotos();
+    };
+
+    window.quickFolderPhoto = async (origIdx, e) => {
+      if (e) e.stopPropagation();
+      const filename = currentGallery.photos[origIdx].filename;
+      if (foldersList.length === 0) {
+        window.openFolderModal(null, filename);
+        return;
+      }
+      const menu = foldersList.map((f, i) => `${i + 1}. ${f.name} (${(f.photos || []).length})`).join("\n");
+      const choice = prompt(`Add "${filename}" to which folder?\n\n${menu}\n\nEnter folder number, or type a NEW folder name:`);
+      if (!choice || !choice.trim()) return;
+
+      const trimmed = choice.trim();
+      const num = parseInt(trimmed, 10);
+      if (!isNaN(num) && String(num) === trimmed && num >= 1 && num <= foldersList.length) {
+        const target = foldersList[num - 1];
+        if (!target.photos.includes(filename)) {
+          target.photos.push(filename);
+        }
+      } else {
+        foldersList.push({ id: Date.now(), name: trimmed, photos: [filename] });
+      }
+
+      if (!selectedSet.has(filename) && (isAdminViewing || selectedSet.size < currentGallery.maxLimit)) {
+        selectedSet.add(filename);
+      }
+
+      await updateDoc(doc(db, "galleries", currentGallery.id), {
+        folders: foldersList,
+        selected: Array.from(selectedSet)
+      });
+      renderClientPhotos();
+    };
+
+    window.deleteFolder = async (folderId) => {
+      if (!confirm("Delete this folder? (Photos will stay in the gallery)")) return;
+      foldersList = foldersList.filter(f => f.id !== folderId);
+      await updateDoc(doc(db, "galleries", currentGallery.id), {
+        folders: foldersList
+      });
+      renderClientPhotos();
+    };
+
+    window.copyFolderFilenames = (folderId) => {
+      const f = foldersList.find(item => item.id === folderId);
+      if (!f || !f.photos.length) return;
+      const list = f.photos.map(fn => fn.replace(/\.[^/.]+$/, "")).join(", ");
+      navigator.clipboard.writeText(list);
+      alert(`Copied ${f.photos.length} filenames from folder "${f.name}":\n\n${list}`);
+    };
+
+    // =========================================================
+    // COLLAGE LAYOUT RENDERER & BUILDER
+    // =========================================================
+    function renderCollageGridHtml(photos, layout) {
+      if (!photos || photos.length === 0) {
+        return `<p class="text-xs text-zinc-500 py-10 text-center">Tap photos below to preview your collage</p>`;
+      }
+      const imgCell = (p, i, extraClass = "") => `
+        <div class="relative overflow-hidden rounded-lg bg-zinc-800 ${extraClass}">
+          <img src="${p.url}" class="w-full h-full object-cover" />
+          <span class="absolute top-1 left-1 bg-black/70 text-amber-300 text-[9px] font-bold px-1.5 py-0.5 rounded">${i + 1}</span>
+        </div>
+      `;
+
+      if (layout === "2x4") {
+        return `<div class="grid grid-cols-2 gap-1.5 w-full">${photos.map((p, i) => imgCell(p, i, "aspect-[4/3]")).join("")}</div>`;
+      }
+      if (layout === "hero") {
+        return `
+          <div class="grid grid-cols-4 gap-1.5 w-full">
+            ${photos.map((p, i) => i === 0
+              ? imgCell(p, i, "col-span-2 row-span-2 aspect-square")
+              : imgCell(p, i, "aspect-square")
+            ).join("")}
+          </div>
+        `;
+      }
+      if (layout === "323") {
+        const r1 = photos.slice(0, 3);
+        const r2 = photos.slice(3, 5);
+        const r3 = photos.slice(5, 8);
+        return `
+          <div class="space-y-1.5 w-full">
+            ${r1.length ? `<div class="grid grid-cols-3 gap-1.5">${r1.map((p, i) => imgCell(p, i, "aspect-square")).join("")}</div>` : ""}
+            ${r2.length ? `<div class="grid grid-cols-2 gap-1.5">${r2.map((p, i) => imgCell(p, i + 3, "aspect-[16/10]")).join("")}</div>` : ""}
+            ${r3.length ? `<div class="grid grid-cols-3 gap-1.5">${r3.map((p, i) => imgCell(p, i + 5, "aspect-square")).join("")}</div>` : ""}
+          </div>
+        `;
+      }
+      return `<div class="grid grid-cols-4 gap-1.5 w-full">${photos.map((p, i) => imgCell(p, i, "aspect-square")).join("")}</div>`;
+    }
+
+    function getLayoutLabel(layout) {
+      const map = { "4x2": "4 × 2 (2 Lines)", "2x4": "2 × 4 (4 Lines)", "hero": "1 Big + 7 Small", "323": "3 - 2 - 3 Lines" };
+      return map[layout] || "4 × 2 Grid";
+    }
+
+    window.openCollageModal = () => {
+      collageDraftPhotos = [];
+      collageDraftLayout = "4x2";
+      collagePickerFilter = "all";
+      document.getElementById("collageNoteInput").value = "";
+      document.getElementById("collageModal").classList.remove("hidden");
+      document.getElementById("collageModal").classList.add("flex");
+      updateCollageModalUI();
+    };
+
+    window.closeCollageModal = () => {
+      document.getElementById("collageModal").classList.add("hidden");
+      document.getElementById("collageModal").classList.remove("flex");
+    };
+
+    window.setCollageLayout = (lay) => {
+      collageDraftLayout = lay;
+      updateCollageModalUI();
+    };
+
+    window.setCollagePickerFilter = (f) => {
+      collagePickerFilter = f;
+      updateCollageModalUI();
+    };
+
+    window.clearCollageSelection = () => {
+      collageDraftPhotos = [];
+      updateCollageModalUI();
+    };
+
+    window.toggleCollageDraftPhoto = (origIdx) => {
+      const photo = currentGallery.photos[origIdx];
+      const existingIndex = collageDraftPhotos.findIndex(p => p.filename === photo.filename);
+      if (existingIndex > -1) {
+        collageDraftPhotos.splice(existingIndex, 1);
+      } else {
+        if (collageDraftPhotos.length >= 8) {
+          alert("Maximum 8 photos per collage!");
+          return;
+        }
+        collageDraftPhotos.push({ url: photo.url, filename: photo.filename });
+      }
+      updateCollageModalUI();
+    };
+
+    function updateCollageModalUI() {
+      ["4x2", "2x4", "hero", "323"].forEach(l => {
+        const btn = document.getElementById(`layBtn-${l}`);
+        if (l === collageDraftLayout) {
+          btn.className = "collage-lay-btn px-3 py-2 rounded-xl text-xs border gold-gradient text-black font-semibold border-transparent cursor-pointer";
+        } else {
+          btn.className = "collage-lay-btn px-3 py-2 rounded-xl text-xs border border-white/15 bg-white/5 text-zinc-300 hover:bg-white/10 cursor-pointer";
+        }
+      });
+
+      ["all", "selected"].forEach(f => {
+        const btn = document.getElementById(`cpFilter-${f}`);
+        btn.className = f === collagePickerFilter
+          ? "px-2.5 py-1 rounded-md text-[11px] bg-white text-black font-semibold cursor-pointer"
+          : "px-2.5 py-1 rounded-md text-[11px] text-zinc-400 hover:text-white cursor-pointer";
+      });
+
+      document.getElementById("collageCountBadge").innerText = collageDraftPhotos.length;
+      document.getElementById("collageLivePreview").innerHTML = renderCollageGridHtml(collageDraftPhotos, collageDraftLayout);
+
+      const allPhotos = (currentGallery.photos || []).map((p, i) => ({ ...p, origIdx: i }));
+      const list = collagePickerFilter === "selected"
+        ? allPhotos.filter(p => selectedSet.has(p.filename))
+        : allPhotos;
+
+      const gridEl = document.getElementById("collagePickerGrid");
+      if (list.length === 0) {
+        gridEl.innerHTML = `<p class="col-span-full text-center text-xs text-zinc-500 py-8">No photos available in this filter.</p>`;
+        return;
+      }
+
+      gridEl.innerHTML = list.map(p => {
+        const orderIdx = collageDraftPhotos.findIndex(d => d.filename === p.filename);
+        const isPicked = orderIdx > -1;
+        return `
+          <div onclick="toggleCollageDraftPhoto(${p.origIdx})" class="relative aspect-square rounded-xl overflow-hidden cursor-pointer border-2 transition ${isPicked ? 'border-amber-400 scale-[0.97]' : 'border-transparent hover:border-white/30'}">
+            <img src="${p.url}" loading="lazy" class="w-full h-full object-cover" />
+            ${isPicked ? `<div class="absolute inset-0 bg-amber-400/25 flex items-center justify-center"><span class="w-7 h-7 rounded-full gold-gradient text-black font-bold text-xs flex items-center justify-center shadow-lg">${orderIdx + 1}</span></div>` : ''}
+          </div>
+        `;
+      }).join("");
+    }
+
+    window.saveCollageRequest = async () => {
+      if (collageDraftPhotos.length < 2) {
+        alert("Please select at least 2 photos (up to 8) to create a collage.");
+        return;
+      }
+      const note = document.getElementById("collageNoteInput").value.trim();
+      const newCollage = {
+        id: Date.now(),
+        layout: collageDraftLayout,
+        note: note || `Collage #${collagesList.length + 1}`,
+        photos: collageDraftPhotos
+      };
+      collagesList.push(newCollage);
+
+      await updateDoc(doc(db, "galleries", currentGallery.id), {
+        collages: collagesList
+      });
+
+      window.closeCollageModal();
+      activeFilter = "collages";
+      renderClientPhotos();
+      alert("Collage saved! Studio will design it in this exact layout.");
+    };
+
+    window.deleteCollage = async (collageId) => {
+      if (!confirm("Delete this collage request?")) return;
+      collagesList = collagesList.filter(c => c.id !== collageId);
+      await updateDoc(doc(db, "galleries", currentGallery.id), {
+        collages: collagesList
+      });
+      renderClientPhotos();
+    };
+
+    window.copyCollageFilenames = (collageId) => {
+      const c = collagesList.find(item => item.id === collageId);
+      if (!c) return;
+      const list = c.photos.map(p => p.filename.replace(/\.[^/.]+$/, "")).join(", ");
+      navigator.clipboard.writeText(list);
+      alert(`Copied ${c.photos.length} filenames for Collage (${getLayoutLabel(c.layout)}):\n\n${list}`);
+    };
+
+    // =========================================================
+    // INSTAGRAM STYLE GLOSSY GREEN HEART + SPARKLE BURST
     // =========================================================
     function showGreenHeart(containerEl) {
       if (!containerEl) return;
-      const heart = document.createElement("span");
-      heart.innerText = "💚";
-      heart.className = "heart-pop";
-      containerEl.appendChild(heart);
-      setTimeout(() => heart.remove(), 780);
+      const wrap = document.createElement("div");
+      wrap.className = "ig-heart-container";
+
+      const gradId = "igGreenGrad_" + Date.now() + Math.floor(Math.random() * 1000);
+      wrap.innerHTML = `
+        <svg class="ig-heart-svg" viewBox="0 0 24 24" fill="none">
+          <defs>
+            <linearGradient id="${gradId}" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#6ee7b7"/>
+              <stop offset="45%" stop-color="#10b981"/>
+              <stop offset="100%" stop-color="#047857"/>
+            </linearGradient>
+          </defs>
+          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="url(#${gradId})"/>
+          <path d="M7.5 5.2c-1.5 0-2.7 1.1-2.9 2.6" stroke="rgba(255,255,255,0.55)" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+      `;
+
+      const angles = [0, 45, 90, 135, 180, 225, 270, 315];
+      angles.forEach((deg, i) => {
+        const sp = document.createElement("span");
+        sp.className = "ig-sparkle";
+        const dist = i % 2 === 0 ? 62 : 46;
+        const rad = (deg * Math.PI) / 180;
+        sp.style.setProperty("--tx", `${Math.round(Math.cos(rad) * dist)}px`);
+        sp.style.setProperty("--ty", `${Math.round(Math.sin(rad) * dist)}px`);
+        if (i % 2 !== 0) {
+          sp.style.width = "5px";
+          sp.style.height = "5px";
+          sp.style.background = "#d4af37";
+        }
+        wrap.appendChild(sp);
+      });
+
+      containerEl.appendChild(wrap);
+      setTimeout(() => wrap.remove(), 750);
     }
 
     async function selectPhotoOnly(idx, delayRender = false) {
@@ -167,18 +728,19 @@
       if (!selectedSet.has(filename)) {
         if (!isAdminViewing && selectedSet.size >= currentGallery.maxLimit) {
           alert(`You have reached the maximum limit of ${currentGallery.maxLimit} photos.`);
-          return;
+          return false;
         }
         selectedSet.add(filename);
-        await updateDoc(doc(db, "galleries", currentGallery.id), {
+        updateDoc(doc(db, "galleries", currentGallery.id), {
           selected: Array.from(selectedSet)
         });
         if (delayRender) {
-          setTimeout(() => renderClientPhotos(), 450);
+          setTimeout(() => renderClientPhotos(), 480);
         } else {
           renderClientPhotos();
         }
       }
+      return true;
     }
 
     window.handleGridPhotoTap = (idx, el) => {
@@ -200,11 +762,27 @@
 
     window.handleLightboxTap = async () => {
       const now = Date.now();
-      if (now - lastLightboxTap < 300) {
+      if (now - lastLightboxTap < 300 && !isAutoSliding) {
         lastLightboxTap = 0;
+        isAutoSliding = true;
+
         showGreenHeart(document.getElementById("lightboxImgWrap"));
         await selectPhotoOnly(lightboxIndex, false);
         updateLightboxUI();
+
+        setTimeout(() => {
+          const imgEl = document.getElementById("lightboxImg");
+          imgEl.classList.add("slide-out-left");
+
+          setTimeout(() => {
+            window.nextPhoto();
+            imgEl.classList.remove("slide-out-left");
+            imgEl.classList.add("slide-in-right");
+            void imgEl.offsetWidth;
+            imgEl.classList.remove("slide-in-right");
+            isAutoSliding = false;
+          }, 230);
+        }, 520);
       } else {
         lastLightboxTap = now;
       }
@@ -422,6 +1000,8 @@
         selected: [],
         starred: [],
         comments: {},
+        collages: [],
+        folders: [],
         submitted: false,
         createdAt: Date.now()
       });
@@ -438,6 +1018,8 @@
       selectedSet = new Set(currentGallery.selected || []);
       starredSet = new Set(currentGallery.starred || []);
       commentsMap = currentGallery.comments || {};
+      collagesList = currentGallery.collages || [];
+      foldersList = currentGallery.folders || [];
       activeFilter = "all";
       isAdminViewing = true;
       document.getElementById("subTitle").innerText = `Admin View • ${currentGallery.name}`;
@@ -532,8 +1114,10 @@
         const selCount = (g.selected || []).length;
         const starCount = (g.starred || []).length;
         const notesCount = Object.values(g.comments || {}).filter(c => c && c.trim()).length;
+        const folCount = (g.folders || []).length;
+        const colCount = (g.collages || []).length;
         const badge = g.submitted
-          ? `<span class="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full">Submitted</span>`
+          ? `<span class="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full">✓ Submitted</span>`
           : `<span class="bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full">In Progress</span>`;
 
         return `
@@ -548,8 +1132,10 @@
                   PIN: <span class="text-white font-mono">${g.pin}</span> &bull;
                   Photos: <span class="text-white">${g.photos.length}</span> &bull;
                   Selected: <span class="text-amber-400 font-semibold">${selCount} / ${g.maxLimit}</span> &bull;
+                  📁 Folders: <span class="text-emerald-300 font-semibold">${folCount}</span> &bull;
                   ★ Covers: <span class="text-yellow-300 font-semibold">${starCount}</span> &bull;
-                  💬 Notes: <span class="text-sky-300 font-semibold">${notesCount}</span>
+                  💬 Notes: <span class="text-sky-300 font-semibold">${notesCount}</span> &bull;
+                  🧩 Collages: <span class="text-purple-300 font-semibold">${colCount}</span>
                 </p>
               </div>
               <div class="flex flex-wrap gap-2">
@@ -619,6 +1205,8 @@
       selectedSet = new Set(currentGallery.selected || []);
       starredSet = new Set(currentGallery.starred || []);
       commentsMap = currentGallery.comments || {};
+      collagesList = currentGallery.collages || [];
+      foldersList = currentGallery.folders || [];
       document.getElementById("subTitle").innerText = currentGallery.name;
 
       renderPinScreen();
@@ -658,58 +1246,98 @@
       const unselCount = allPhotos.length - count;
       const starCount = starredSet.size;
       const notesCount = allPhotos.filter(p => commentsMap[p.filename] && commentsMap[p.filename].trim()).length;
+      const folCount = foldersList.length;
+      const colCount = collagesList.length;
       const limit = currentGallery.maxLimit;
       const pct = Math.min(100, Math.round((count / limit) * 100));
 
-      let displayPhotos = allPhotos.map((p, i) => ({ ...p, origIdx: i }));
-      if (activeFilter === "selected") {
-        displayPhotos = displayPhotos.filter(p => selectedSet.has(p.filename));
-      } else if (activeFilter === "unselected") {
-        displayPhotos = displayPhotos.filter(p => !selectedSet.has(p.filename));
-      } else if (activeFilter === "starred") {
-        displayPhotos = displayPhotos.filter(p => starredSet.has(p.filename));
-      } else if (activeFilter === "notes") {
-        displayPhotos = displayPhotos.filter(p => commentsMap[p.filename] && commentsMap[p.filename].trim());
-      }
+      let contentHtml = "";
 
-      document.getElementById("app").innerHTML = `
-        <!-- GALLERY BANNER & FILTER -->
-        <div class="mb-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-5 border-b border-white/10">
-          <div>
-            <p class="text-[11px] uppercase tracking-[0.25em] text-amber-400 mb-1">${isAdminViewing ? 'Admin Gallery Inspector' : 'Photo Selection'}</p>
-            <h2 class="font-serif-luxury text-2xl sm:text-3xl font-semibold text-white">${currentGallery.name}</h2>
-            <p class="text-[11px] text-zinc-400 mt-1">Double-tap photo for <span class="text-emerald-400">💚</span> &bull; <span class="text-yellow-300">★</span> Cover/Frame &bull; <span class="text-sky-300">💬</span> Add Note</p>
-            <div class="mt-3 w-full sm:w-64 h-1.5 bg-white/10 rounded-full overflow-hidden">
-              <div class="h-full gold-gradient transition-all duration-300" style="width: ${pct}%"></div>
-            </div>
-          </div>
+      if (activeFilter === "folders") {
+        contentHtml = foldersList.length === 0
+          ? `<div class="text-center py-20">
+               <p class="text-zinc-400 text-sm mb-4">No custom folders yet. Create folders (e.g., Reception, Family, Album 1) and organize your selected photos!</p>
+               <button onclick="openFolderModal()" class="bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs px-5 py-2.5 rounded-xl cursor-pointer">📁 + Create Your First Folder</button>
+             </div>`
+          : `<div class="grid md:grid-cols-2 gap-5">
+              ${foldersList.map(f => {
+                const fPhotos = (f.photos || []).map(fn => allPhotos.find(p => p.filename === fn)).filter(Boolean);
+                return `
+                  <div class="glass-card p-4 rounded-3xl flex flex-col gap-3">
+                    <div class="flex items-start justify-between gap-2">
+                      <div>
+                        <span class="text-[10px] uppercase tracking-wider text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">${fPhotos.length} Photos</span>
+                        <h3 class="text-base font-semibold text-white mt-2">📁 ${escapeHtml(f.name)}</h3>
+                      </div>
+                      <div class="flex flex-wrap gap-1.5 shrink-0">
+                        <button onclick="openFolderModal(${f.id})" class="bg-white/10 hover:bg-white/20 text-white text-[11px] px-3 py-1.5 rounded-lg transition cursor-pointer">Edit</button>
+                        <button onclick="copyFolderFilenames(${f.id})" class="gold-gradient text-black font-semibold text-[11px] px-3 py-1.5 rounded-lg transition cursor-pointer">Copy Names</button>
+                        <button onclick="deleteFolder(${f.id})" class="bg-red-500/15 hover:bg-red-500/30 text-red-300 text-[11px] px-2.5 py-1.5 rounded-lg transition cursor-pointer">🗑</button>
+                      </div>
+                    </div>
+                    <div class="grid grid-cols-4 sm:grid-cols-5 gap-1.5 bg-black/40 p-2 rounded-2xl border border-white/5">
+                      ${fPhotos.slice(0, 10).map(p => `
+                        <div class="aspect-square rounded-lg overflow-hidden bg-zinc-800">
+                          <img src="${p.url}" loading="lazy" class="w-full h-full object-cover" />
+                        </div>
+                      `).join("")}
+                      ${fPhotos.length > 10 ? `<div class="aspect-square rounded-lg bg-white/10 flex items-center justify-center text-xs font-semibold text-amber-300">+${fPhotos.length - 10}</div>` : ''}
+                    </div>
+                    <p class="text-[10px] text-zinc-400 truncate" title="${escapeHtml(f.photos.join(', '))}">
+                      <span class="text-zinc-500">Files:</span> ${escapeHtml(f.photos.join(", "))}
+                    </p>
+                  </div>
+                `;
+              }).join("")}
+            </div>`;
+      } else if (activeFilter === "collages") {
+        contentHtml = collagesList.length === 0
+          ? `<div class="text-center py-20">
+               <p class="text-zinc-400 text-sm mb-4">No collages created yet. Group up to 8 photos into a custom layout!</p>
+               <button onclick="openCollageModal()" class="gold-gradient text-black font-semibold text-xs px-5 py-2.5 rounded-xl cursor-pointer">+ Make Your First Collage</button>
+             </div>`
+          : `<div class="grid md:grid-cols-2 gap-5">
+              ${collagesList.map((c, idx) => `
+                <div class="glass-card p-4 rounded-3xl flex flex-col gap-3">
+                  <div class="flex items-start justify-between gap-2">
+                    <div>
+                      <span class="text-[10px] uppercase tracking-wider text-purple-300 bg-purple-500/15 border border-purple-500/30 px-2.5 py-0.5 rounded-full">${getLayoutLabel(c.layout)}</span>
+                      <h3 class="text-sm font-semibold text-white mt-2">Collage #${idx + 1}: ${escapeHtml(c.note)}</h3>
+                    </div>
+                    <div class="flex gap-1.5 shrink-0">
+                      <button onclick="copyCollageFilenames(${c.id})" class="bg-white/10 hover:bg-white/20 text-white text-[11px] px-3 py-1.5 rounded-lg transition cursor-pointer">Copy Names</button>
+                      <button onclick="deleteCollage(${c.id})" class="bg-red-500/15 hover:bg-red-500/30 text-red-300 text-[11px] px-2.5 py-1.5 rounded-lg transition cursor-pointer">🗑</button>
+                    </div>
+                  </div>
+                  <div class="bg-black/40 p-2 rounded-2xl border border-white/5">
+                    ${renderCollageGridHtml(c.photos, c.layout)}
+                  </div>
+                  <p class="text-[10px] text-zinc-400 break-all">
+                    <span class="text-zinc-500">Files (${c.photos.length}):</span> ${c.photos.map((p, i) => `(${i + 1}) ${p.filename}`).join(", ")}
+                  </p>
+                </div>
+              `).join("")}
+            </div>`;
+      } else {
+        let displayPhotos = allPhotos.map((p, i) => ({ ...p, origIdx: i }));
+        if (activeFilter === "selected") {
+          displayPhotos = displayPhotos.filter(p => selectedSet.has(p.filename));
+        } else if (activeFilter === "unselected") {
+          displayPhotos = displayPhotos.filter(p => !selectedSet.has(p.filename));
+        } else if (activeFilter === "starred") {
+          displayPhotos = displayPhotos.filter(p => starredSet.has(p.filename));
+        } else if (activeFilter === "notes") {
+          displayPhotos = displayPhotos.filter(p => commentsMap[p.filename] && commentsMap[p.filename].trim());
+        }
 
-          <div class="flex flex-wrap items-center gap-1.5 bg-white/5 p-1 rounded-xl border border-white/10 w-fit">
-            <button onclick="setFilter('all')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'all' ? 'bg-white text-black' : 'text-zinc-400 hover:text-white'}">
-              All (${allPhotos.length})
-            </button>
-            <button onclick="setFilter('selected')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'selected' ? 'gold-gradient text-black font-semibold' : 'text-zinc-400 hover:text-white'}">
-              ♥ Selected (${count})
-            </button>
-            <button onclick="setFilter('unselected')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'unselected' ? 'bg-zinc-200 text-black font-semibold' : 'text-zinc-400 hover:text-white'}">
-              Unselected (${unselCount})
-            </button>
-            <button onclick="setFilter('starred')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'starred' ? 'bg-yellow-400 text-black font-semibold' : 'text-zinc-400 hover:text-white'}">
-              ★ Covers (${starCount})
-            </button>
-            <button onclick="setFilter('notes')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'notes' ? 'bg-sky-400 text-black font-semibold' : 'text-zinc-400 hover:text-white'}">
-              💬 Notes (${notesCount})
-            </button>
-          </div>
-        </div>
-
-        ${displayPhotos.length === 0
+        contentHtml = displayPhotos.length === 0
           ? `<p class="text-center py-20 text-zinc-500 text-sm">No photos in this section yet.</p>`
           : `<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
               ${displayPhotos.map(p => {
                 const isSel = selectedSet.has(p.filename);
                 const isStar = starredSet.has(p.filename);
                 const note = commentsMap[p.filename] || "";
+                const inFolders = getPhotoFolders(p.filename);
                 return `
                   <div class="relative group bg-zinc-900 rounded-2xl overflow-hidden flex flex-col transition-all duration-200 ${isSel ? 'selected-ring' : 'border border-white/5 hover:border-white/20'}">
                     <div onclick="handleGridPhotoTap(${p.origIdx}, this)" class="relative overflow-hidden aspect-square cursor-pointer select-none">
@@ -726,12 +1354,16 @@
                       <button onclick="promptComment(${p.origIdx}, event)" title="Add / Edit Note" class="absolute bottom-2 left-2 w-8 h-8 rounded-full flex items-center justify-center text-xs shadow-xl backdrop-blur-md transition cursor-pointer ${note ? 'bg-sky-400 text-black' : 'bg-black/55 text-white/80 hover:bg-sky-400 hover:text-black'}">
                         💬
                       </button>
-                      <!-- ADMIN DELETE PHOTO BUTTON -->
+                      <!-- BOTTOM RIGHT: ADMIN DELETE OR CLIENT FOLDER -->
                       ${isAdminViewing ? `
                         <button onclick="deleteSinglePhoto(${p.origIdx}, event)" title="Delete Photo from Gallery" class="absolute bottom-2 right-2 w-8 h-8 rounded-full flex items-center justify-center text-xs shadow-xl backdrop-blur-md bg-red-600/80 hover:bg-red-500 text-white transition cursor-pointer">
                           🗑
                         </button>
-                      ` : ''}
+                      ` : `
+                        <button onclick="quickFolderPhoto(${p.origIdx}, event)" title="Add to Folder" class="absolute bottom-2 right-2 w-8 h-8 rounded-full flex items-center justify-center text-xs shadow-xl backdrop-blur-md transition cursor-pointer ${inFolders.length ? 'bg-emerald-400 text-black' : 'bg-black/55 text-white/80 hover:bg-emerald-400 hover:text-black'}">
+                          📁
+                        </button>
+                      `}
                     </div>
                     <div class="px-3 py-2 text-[10px] text-zinc-400 bg-zinc-950/90 flex-1 flex flex-col justify-center">
                       <div class="flex items-center justify-between">
@@ -741,13 +1373,63 @@
                           ${isSel ? '<span class="text-amber-400 font-semibold">✓</span>' : ''}
                         </span>
                       </div>
-                      ${note ? `<p class="text-[10px] text-sky-300 mt-1 truncate" title="${escapeHtml(note)}">💬 ${escapeHtml(note)}</p>` : ''}
+                      ${inFolders.length ? `<p class="text-[10px] text-emerald-300 mt-0.5 truncate">📁 ${escapeHtml(inFolders.join(", "))}</p>` : ''}
+                      ${note ? `<p class="text-[10px] text-sky-300 mt-0.5 truncate" title="${escapeHtml(note)}">💬 ${escapeHtml(note)}</p>` : ''}
                     </div>
                   </div>
                 `;
               }).join("")}
-            </div>`
-        }
+            </div>`;
+      }
+
+      document.getElementById("app").innerHTML = `
+        <!-- GALLERY BANNER & FILTER -->
+        <div class="mb-6 flex flex-col gap-4 pb-5 border-b border-white/10">
+          <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div>
+              <p class="text-[11px] uppercase tracking-[0.25em] text-amber-400 mb-1">${isAdminViewing ? 'Admin Gallery Inspector' : 'Photo Selection'}</p>
+              <h2 class="font-serif-luxury text-2xl sm:text-3xl font-semibold text-white">${currentGallery.name}</h2>
+              <p class="text-[11px] text-zinc-400 mt-1">Double-tap photo to Select &bull; <span class="text-emerald-300">📁</span> Put in Folder &bull; Click <span class="text-emerald-400 font-semibold">✓ Selected</span> above when done</p>
+              <div class="mt-3 w-full sm:w-64 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                <div class="h-full gold-gradient transition-all duration-300" style="width: ${pct}%"></div>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button onclick="openFolderModal()" class="bg-emerald-500/20 hover:bg-emerald-500/35 text-emerald-200 border border-emerald-500/40 text-xs font-semibold px-4 py-2.5 rounded-xl transition cursor-pointer">
+                📁 + Create Folder
+              </button>
+              <button onclick="openCollageModal()" class="bg-purple-500/20 hover:bg-purple-500/35 text-purple-200 border border-purple-500/40 text-xs font-semibold px-4 py-2.5 rounded-xl transition cursor-pointer">
+                🧩 + Make Collage
+              </button>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-1.5 bg-white/5 p-1 rounded-xl border border-white/10 w-fit">
+            <button onclick="setFilter('all')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'all' ? 'bg-white text-black' : 'text-zinc-400 hover:text-white'}">
+              All (${allPhotos.length})
+            </button>
+            <button onclick="setFilter('selected')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'selected' ? 'gold-gradient text-black font-semibold' : 'text-zinc-400 hover:text-white'}">
+              ♥ Selected (${count})
+            </button>
+            <button onclick="setFilter('unselected')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'unselected' ? 'bg-zinc-200 text-black font-semibold' : 'text-zinc-400 hover:text-white'}">
+              Unselected (${unselCount})
+            </button>
+            <button onclick="setFilter('folders')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'folders' ? 'bg-emerald-400 text-black font-semibold' : 'text-zinc-400 hover:text-white'}">
+              📁 Folders (${folCount})
+            </button>
+            <button onclick="setFilter('starred')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'starred' ? 'bg-yellow-400 text-black font-semibold' : 'text-zinc-400 hover:text-white'}">
+              ★ Covers (${starCount})
+            </button>
+            <button onclick="setFilter('notes')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'notes' ? 'bg-sky-400 text-black font-semibold' : 'text-zinc-400 hover:text-white'}">
+              💬 Notes (${notesCount})
+            </button>
+            <button onclick="setFilter('collages')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'collages' ? 'bg-purple-400 text-black font-semibold' : 'text-zinc-400 hover:text-white'}">
+              🧩 Collages (${colCount})
+            </button>
+          </div>
+        </div>
+
+        ${contentHtml}
       `;
     }
 
@@ -768,8 +1450,8 @@
           <div class="bg-white/5 border border-white/10 px-3 py-1.5 rounded-full text-xs font-medium">
             <span class="text-amber-400 font-bold">${count}</span> <span class="text-zinc-400">/ ${limit}</span>
           </div>
-          <button onclick="submitSelection()" class="gold-gradient text-black text-xs font-semibold px-4 py-1.5 rounded-full hover:opacity-90 transition cursor-pointer">
-            ${currentGallery.submitted ? 'Update Submit' : 'Final Submit'}
+          <button onclick="submitSelection()" class="bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-bold px-4 py-1.5 rounded-full shadow-lg shadow-emerald-500/20 transition cursor-pointer flex items-center gap-1.5">
+            <span>✓</span> <span>${currentGallery.submitted ? 'Selected (Update)' : 'Selected'}</span>
           </button>
         `;
       }
@@ -835,28 +1517,71 @@
       selectedSet.delete(photo.filename);
       starredSet.delete(photo.filename);
       delete commentsMap[photo.filename];
+      foldersList.forEach(f => {
+        f.photos = (f.photos || []).filter(fn => fn !== photo.filename);
+      });
 
       await updateDoc(doc(db, "galleries", currentGallery.id), {
         photos: currentGallery.photos,
         selected: Array.from(selectedSet),
         starred: Array.from(starredSet),
-        comments: commentsMap
+        comments: commentsMap,
+        folders: foldersList
       });
 
       renderClientPhotos();
     };
 
+    window.closeSubmitModal = () => {
+      document.getElementById("submitSuccessModal").classList.add("hidden");
+      document.getElementById("submitSuccessModal").classList.remove("flex");
+    };
+
     window.submitSelection = async () => {
-      if (!confirm(`Submit ${selectedSet.size} selected photos (${starredSet.size} Cover/Frame) to ${STUDIO_NAME}?`)) return;
+      if (selectedSet.size === 0 && foldersList.length === 0) {
+        alert("Please select at least 1 photo before submitting.");
+        return;
+      }
+      if (!confirm(`Confirm selection of ${selectedSet.size} photos (${foldersList.length} Folders) and notify ${STUDIO_NAME} on WhatsApp?`)) return;
+
       await updateDoc(doc(db, "galleries", currentGallery.id), {
         selected: Array.from(selectedSet),
         starred: Array.from(starredSet),
         comments: commentsMap,
+        collages: collagesList,
+        folders: foldersList,
         submitted: true
       });
       currentGallery.submitted = true;
       updateClientHeader();
-      alert("Thank you! Your photo selection has been submitted.");
+
+      // Build WhatsApp Alert Message
+      const folderLines = foldersList.length > 0
+        ? "\n" + foldersList.map(f => `  • ${f.name}: ${(f.photos || []).length} photos`).join("\n")
+        : " None";
+
+      const notesCount = Object.values(commentsMap).filter(c => c && c.trim()).length;
+      const waMsg =
+        `Hi ${STUDIO_NAME}! ✅\n` +
+        `I have completed my photo selection.\n\n` +
+        `📸 *Gallery:* ${currentGallery.name}\n` +
+        `♥ *Selected Photos:* ${selectedSet.size} / ${currentGallery.maxLimit}\n` +
+        `📁 *Folders (${foldersList.length}):*${folderLines}\n` +
+        `★ *Covers / Frames:* ${starredSet.size}\n` +
+        `🧩 *Collages:* ${collagesList.length}\n` +
+        `💬 *Notes:* ${notesCount}\n\n` +
+        `Please check the studio dashboard!`;
+
+      const waUrl = `https://wa.me/${STUDIO_WHATSAPP_NUMBER}?text=${encodeURIComponent(waMsg)}`;
+
+      document.getElementById("submitSummaryText").innerText =
+        `You selected ${selectedSet.size} photos across ${foldersList.length} custom folder(s). Tap the green button below to alert ${STUDIO_NAME} on WhatsApp.`;
+      document.getElementById("whatsappAlertLink").href = waUrl;
+      document.getElementById("submitSuccessModal").classList.remove("hidden");
+      document.getElementById("submitSuccessModal").classList.add("flex");
+
+      // Also attempt to open WhatsApp directly
+      window.open(waUrl, "_blank");
     };
 
     // =========================================================
