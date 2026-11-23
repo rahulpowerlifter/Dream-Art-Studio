@@ -490,4 +490,120 @@
                   </div>
                 `;
               }).join("")}
-            </div>
+            </div>`
+        }
+      `;
+    }
+
+    function updateClientHeader() {
+      const count = selectedSet.size;
+      const limit = currentGallery.maxLimit;
+      document.getElementById("headerActions").innerHTML = `
+        <div class="bg-white/5 border border-white/10 px-3 py-1.5 rounded-full text-xs font-medium">
+          <span class="text-amber-400 font-bold">${count}</span> <span class="text-zinc-400">/ ${limit}</span>
+        </div>
+        <button onclick="submitSelection()" class="gold-gradient text-black text-xs font-semibold px-4 py-1.5 rounded-full hover:opacity-90 transition cursor-pointer">
+          ${currentGallery.submitted ? 'Update Submit' : 'Final Submit'}
+        </button>
+      `;
+    }
+
+    window.toggleSelect = async (idx, e) => {
+      if (e) e.stopPropagation();
+      const filename = currentGallery.photos[idx].filename;
+      if (selectedSet.has(filename)) {
+        selectedSet.delete(filename);
+      } else {
+        if (selectedSet.size >= currentGallery.maxLimit) {
+          alert(`You have reached the maximum limit of ${currentGallery.maxLimit} photos.`);
+          return;
+        }
+        selectedSet.add(filename);
+      }
+      renderClientPhotos();
+      await updateDoc(doc(db, "galleries", currentGallery.id), {
+        selected: Array.from(selectedSet)
+      });
+    };
+
+    window.submitSelection = async () => {
+      if (!confirm(`Submit ${selectedSet.size} selected photos to ${STUDIO_NAME}?`)) return;
+      await updateDoc(doc(db, "galleries", currentGallery.id), {
+        selected: Array.from(selectedSet),
+        submitted: true
+      });
+      currentGallery.submitted = true;
+      updateClientHeader();
+      alert("Thank you! Your photo selection has been submitted.");
+    };
+
+    // =========================================================
+    // LIGHTBOX + KEYBOARD + MOBILE SWIPE SUPPORT
+    // =========================================================
+    window.openLightbox = (idx) => {
+      lightboxIndex = idx;
+      updateLightboxUI();
+      document.getElementById("lightbox").classList.remove("hidden");
+      document.getElementById("lightbox").classList.add("flex");
+    };
+
+    window.closeLightbox = () => {
+      document.getElementById("lightbox").classList.add("hidden");
+      document.getElementById("lightbox").classList.remove("flex");
+    };
+
+    window.prevPhoto = () => {
+      lightboxIndex = (lightboxIndex - 1 + currentGallery.photos.length) % currentGallery.photos.length;
+      updateLightboxUI();
+    };
+
+    window.nextPhoto = () => {
+      lightboxIndex = (lightboxIndex + 1) % currentGallery.photos.length;
+      updateLightboxUI();
+    };
+
+    window.toggleCurrentLightboxSelect = async () => {
+      await window.toggleSelect(lightboxIndex);
+      updateLightboxUI();
+    };
+
+    document.addEventListener("keydown", (e) => {
+      const lb = document.getElementById("lightbox");
+      if (lb.classList.contains("hidden")) return;
+      if (e.key === "Escape") window.closeLightbox();
+      if (e.key === "ArrowLeft") window.prevPhoto();
+      if (e.key === "ArrowRight") window.nextPhoto();
+    });
+
+    // --- MOBILE TOUCH SWIPE ---
+    let touchStartX = 0;
+    const lbEl = document.getElementById("lightbox");
+    lbEl.addEventListener("touchstart", (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    lbEl.addEventListener("touchend", (e) => {
+      const touchEndX = e.changedTouches[0].screenX;
+      const diff = touchStartX - touchEndX;
+      if (Math.abs(diff) > 50) {
+        if (diff > 0) window.nextPhoto();
+        else window.prevPhoto();
+      }
+    }, { passive: true });
+
+    function updateLightboxUI() {
+      const p = currentGallery.photos[lightboxIndex];
+      document.getElementById("lightboxImg").src = p.url;
+      document.getElementById("lightboxFilename").innerText = `${p.filename}  •  ${lightboxIndex + 1} / ${currentGallery.photos.length}`;
+      const btn = document.getElementById("lightboxSelectBtn");
+      if (selectedSet.has(p.filename)) {
+        btn.innerText = "♥ Selected";
+        btn.className = "px-6 py-2 rounded-full font-semibold text-xs uppercase tracking-wider gold-gradient text-black transition cursor-pointer";
+      } else {
+        btn.innerText = "♥ Select";
+        btn.className = "px-6 py-2 rounded-full font-semibold text-xs uppercase tracking-wider bg-white/10 hover:bg-amber-400 hover:text-black text-white transition cursor-pointer";
+      }
+    }
+  </script>
+</body>
+</html>
