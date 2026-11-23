@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#09090b" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Inter:wght@300;400;500;600&family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   <style>
     html, body {
@@ -21,6 +21,7 @@
       background-image: radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.08), transparent 45%);
     }
     .font-serif-luxury { font-family: 'Montserrat', sans-serif; letter-spacing: 0.12em; }
+    .font-script-luxury { font-family: 'Great Vibes', cursive; }
     .glass-card {
       background: rgba(255, 255, 255, 0.03);
       backdrop-filter: blur(16px);
@@ -171,13 +172,11 @@
 
       <!-- WALL MOCKUP STAGE -->
       <div id="frameWallStage" class="wall-cream relative flex flex-col items-center justify-center py-10 sm:py-14 px-6 transition-all duration-300">
-        <!-- Hanging Wire Shadow -->
         <div class="relative flex flex-col items-center">
           <div id="frameOuterBox" class="frame-black bg-[#faf8f5] p-3 sm:p-4 transition-all duration-300">
             <img id="framePreviewImg" src="" class="max-h-[42vh] max-w-[68vw] sm:max-w-[380px] object-contain block shadow-inner" />
           </div>
         </div>
-        <!-- Minimalist Console / Sofa Silhouette -->
         <div class="mt-8 w-56 sm:w-72 h-2.5 bg-black/25 rounded-full blur-[2px]"></div>
         <p class="mt-2 text-[10px] uppercase tracking-[0.25em] text-black/45 font-semibold" id="frameWallCaption">Living Room Wall Preview</p>
       </div>
@@ -407,7 +406,7 @@
     }
 
     // =========================================================
-    // LUXURY FULL-SCREEN COVER BANNER
+    // LUXURY FULL-SCREEN COVER BANNER (SCRIPT FONT)
     // =========================================================
     window.enterGalleryFromCover = () => {
       showCoverBanner = false;
@@ -440,7 +439,7 @@
           <div class="relative z-10 text-center px-6 py-12 sm:py-16 max-w-2xl">
             ${getLogoHtml("h-14 sm:h-16")}
             <p class="text-[11px] sm:text-xs uppercase tracking-[0.35em] text-amber-300/90 mb-3">Exclusive Private Collection</p>
-            <h2 class="font-serif-luxury text-3xl sm:text-5xl font-semibold text-white tracking-wider drop-shadow-lg mb-4">${currentGallery.name}</h2>
+            <h2 class="font-script-luxury text-5xl sm:text-7xl font-normal text-white tracking-wide drop-shadow-lg mb-4">${currentGallery.name}</h2>
             <p class="text-xs sm:text-sm text-zinc-300 mb-8 tracking-wide">${photoCount} Curated Memories &bull; ${STUDIO_NAME}</p>
             <button onclick="enterGalleryFromCover()" class="gold-gradient text-black font-semibold text-xs sm:text-sm uppercase tracking-[0.2em] px-8 py-3.5 rounded-full shadow-2xl shadow-amber-500/30 hover:scale-105 transition cursor-pointer">
               Open Gallery ↓
