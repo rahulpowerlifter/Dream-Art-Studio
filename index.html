@@ -29,6 +29,22 @@
     .selected-ring {
       box-shadow: 0 0 0 2px #d4af37, 0 10px 25px -5px rgba(212, 175, 55, 0.35);
     }
+    @keyframes heartPop {
+      0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+      25% { transform: translate(-50%, -50%) scale(1.25); opacity: 1; }
+      55% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(1.35); opacity: 0; }
+    }
+    .heart-pop {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      font-size: 4rem;
+      pointer-events: none;
+      z-index: 30;
+      filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.55));
+      animation: heartPop 0.75s cubic-bezier(0.17, 0.89, 0.32, 1.49) forwards;
+    }
   </style>
 </head>
 <body class="min-h-screen flex flex-col selection:bg-amber-500/30 selection:text-amber-200">
@@ -51,14 +67,22 @@
   <!-- LIGHTBOX MODAL -->
   <div id="lightbox" class="fixed inset-0 z-50 bg-black/95 backdrop-blur-md hidden flex-col items-center justify-center p-4">
     <button onclick="closeLightbox()" class="absolute top-4 right-4 text-zinc-300 hover:text-white bg-white/10 hover:bg-white/20 px-3.5 py-1.5 rounded-full text-xs tracking-wider uppercase transition cursor-pointer">✕ Close</button>
-    <img id="lightboxImg" src="" class="max-h-[75vh] max-w-[94vw] object-contain rounded-lg shadow-2xl select-none" />
-    <div class="mt-5 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3">
+    <div id="lightboxImgWrap" onclick="handleLightboxTap()" class="relative flex items-center justify-center cursor-pointer">
+      <img id="lightboxImg" src="" class="max-h-[65vh] max-w-[94vw] object-contain rounded-lg shadow-2xl select-none" />
+    </div>
+    <div class="mt-4 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
       <button onclick="prevPhoto()" class="bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full text-xs uppercase tracking-wider transition cursor-pointer">← Prev</button>
       <button id="lightboxSelectBtn" onclick="toggleCurrentLightboxSelect()" class="px-5 py-2 rounded-full font-semibold text-xs uppercase tracking-wider transition cursor-pointer">♥ Select</button>
       <button id="lightboxStarBtn" onclick="toggleCurrentLightboxStar()" class="px-5 py-2 rounded-full font-semibold text-xs uppercase tracking-wider transition cursor-pointer">★ Cover / Frame</button>
+      <button id="lightboxDeleteBtn" onclick="deleteCurrentLightboxPhoto()" class="hidden bg-red-500/20 hover:bg-red-500/40 text-red-300 border border-red-500/30 px-4 py-2 rounded-full font-semibold text-xs uppercase tracking-wider transition cursor-pointer">🗑 Delete</button>
       <button onclick="nextPhoto()" class="bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full text-xs uppercase tracking-wider transition cursor-pointer">Next →</button>
     </div>
-    <p id="lightboxFilename" class="mt-3 text-xs text-zinc-400 tracking-wide"></p>
+    <!-- LIGHTBOX COMMENT BOX -->
+    <div class="mt-3 w-full max-w-md flex items-center gap-2">
+      <input id="lightboxCommentInput" type="text" placeholder="Add a note (e.g. Retouch background, B&W)..." class="flex-1 bg-white/10 border border-white/15 rounded-full px-4 py-2 text-xs text-white placeholder-zinc-400 outline-none focus:border-amber-400 transition" />
+      <button onclick="saveLightboxComment()" class="gold-gradient text-black font-semibold text-xs px-4 py-2 rounded-full hover:opacity-90 transition cursor-pointer">Save</button>
+    </div>
+    <p id="lightboxFilename" class="mt-2.5 text-xs text-zinc-400 tracking-wide"></p>
   </div>
 
   <!-- APP LOGIC -->
@@ -104,16 +128,87 @@
     let currentGallery = null;
     let selectedSet = new Set();
     let starredSet = new Set();
+    let commentsMap = {};
     let lightboxIndex = 0;
-    let activeFilter = "all"; // "all", "selected", "unselected", or "starred"
+    let activeFilter = "all"; // "all", "selected", "unselected", "starred", "notes"
     let addMoreTargetId = null;
     let isAdminViewing = false;
+
+    // Double-tap / Double-click state
+    let lastTapTime = 0;
+    let lastTapIdx = -1;
+    let singleTapTimer = null;
+    let lastLightboxTap = 0;
+
+    function escapeHtml(str) {
+      return String(str || "").replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+    }
 
     function getLogoHtml(sizeClass = "h-16") {
       return STUDIO_LOGO_URL
         ? `<img src="${STUDIO_LOGO_URL}" alt="${STUDIO_NAME}" class="${sizeClass} mx-auto mb-4 object-contain drop-shadow-lg" />`
         : `<div class="w-12 h-12 mx-auto mb-4 rounded-full gold-gradient flex items-center justify-center text-black font-serif-luxury font-bold text-xl shadow-lg">D</div>`;
     }
+
+    // =========================================================
+    // GREEN HEART POPUP ANIMATION (INSTAGRAM STYLE)
+    // =========================================================
+    function showGreenHeart(containerEl) {
+      if (!containerEl) return;
+      const heart = document.createElement("span");
+      heart.innerText = "💚";
+      heart.className = "heart-pop";
+      containerEl.appendChild(heart);
+      setTimeout(() => heart.remove(), 780);
+    }
+
+    async function selectPhotoOnly(idx, delayRender = false) {
+      const filename = currentGallery.photos[idx].filename;
+      if (!selectedSet.has(filename)) {
+        if (!isAdminViewing && selectedSet.size >= currentGallery.maxLimit) {
+          alert(`You have reached the maximum limit of ${currentGallery.maxLimit} photos.`);
+          return;
+        }
+        selectedSet.add(filename);
+        await updateDoc(doc(db, "galleries", currentGallery.id), {
+          selected: Array.from(selectedSet)
+        });
+        if (delayRender) {
+          setTimeout(() => renderClientPhotos(), 450);
+        } else {
+          renderClientPhotos();
+        }
+      }
+    }
+
+    window.handleGridPhotoTap = (idx, el) => {
+      const now = Date.now();
+      if (lastTapIdx === idx && (now - lastTapTime) < 300) {
+        clearTimeout(singleTapTimer);
+        lastTapTime = 0;
+        lastTapIdx = -1;
+        showGreenHeart(el);
+        selectPhotoOnly(idx, true);
+      } else {
+        lastTapTime = now;
+        lastTapIdx = idx;
+        singleTapTimer = setTimeout(() => {
+          window.openLightbox(idx);
+        }, 260);
+      }
+    };
+
+    window.handleLightboxTap = async () => {
+      const now = Date.now();
+      if (now - lastLightboxTap < 300) {
+        lastLightboxTap = 0;
+        showGreenHeart(document.getElementById("lightboxImgWrap"));
+        await selectPhotoOnly(lightboxIndex, false);
+        updateLightboxUI();
+      } else {
+        lastLightboxTap = now;
+      }
+    };
 
     // =========================================================
     // AUTO-COMPRESS (CLEAN, NO WATERMARK)
@@ -326,6 +421,7 @@
         photos: uploadedPhotos,
         selected: [],
         starred: [],
+        comments: {},
         submitted: false,
         createdAt: Date.now()
       });
@@ -341,6 +437,7 @@
       currentGallery = { id: snap.id, ...snap.data() };
       selectedSet = new Set(currentGallery.selected || []);
       starredSet = new Set(currentGallery.starred || []);
+      commentsMap = currentGallery.comments || {};
       activeFilter = "all";
       isAdminViewing = true;
       document.getElementById("subTitle").innerText = `Admin View • ${currentGallery.name}`;
@@ -434,6 +531,7 @@
         const shareUrl = `${window.location.origin}${window.location.pathname}?gallery=${g.id}`;
         const selCount = (g.selected || []).length;
         const starCount = (g.starred || []).length;
+        const notesCount = Object.values(g.comments || {}).filter(c => c && c.trim()).length;
         const badge = g.submitted
           ? `<span class="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full">Submitted</span>`
           : `<span class="bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full">In Progress</span>`;
@@ -450,7 +548,8 @@
                   PIN: <span class="text-white font-mono">${g.pin}</span> &bull;
                   Photos: <span class="text-white">${g.photos.length}</span> &bull;
                   Selected: <span class="text-amber-400 font-semibold">${selCount} / ${g.maxLimit}</span> &bull;
-                  ★ Covers: <span class="text-yellow-300 font-semibold">${starCount}</span>
+                  ★ Covers: <span class="text-yellow-300 font-semibold">${starCount}</span> &bull;
+                  💬 Notes: <span class="text-sky-300 font-semibold">${notesCount}</span>
                 </p>
               </div>
               <div class="flex flex-wrap gap-2">
@@ -519,6 +618,7 @@
       currentGallery = { id: snap.id, ...snap.data() };
       selectedSet = new Set(currentGallery.selected || []);
       starredSet = new Set(currentGallery.starred || []);
+      commentsMap = currentGallery.comments || {};
       document.getElementById("subTitle").innerText = currentGallery.name;
 
       renderPinScreen();
@@ -557,6 +657,7 @@
       const count = selectedSet.size;
       const unselCount = allPhotos.length - count;
       const starCount = starredSet.size;
+      const notesCount = allPhotos.filter(p => commentsMap[p.filename] && commentsMap[p.filename].trim()).length;
       const limit = currentGallery.maxLimit;
       const pct = Math.min(100, Math.round((count / limit) * 100));
 
@@ -567,6 +668,8 @@
         displayPhotos = displayPhotos.filter(p => !selectedSet.has(p.filename));
       } else if (activeFilter === "starred") {
         displayPhotos = displayPhotos.filter(p => starredSet.has(p.filename));
+      } else if (activeFilter === "notes") {
+        displayPhotos = displayPhotos.filter(p => commentsMap[p.filename] && commentsMap[p.filename].trim());
       }
 
       document.getElementById("app").innerHTML = `
@@ -575,24 +678,27 @@
           <div>
             <p class="text-[11px] uppercase tracking-[0.25em] text-amber-400 mb-1">${isAdminViewing ? 'Admin Gallery Inspector' : 'Photo Selection'}</p>
             <h2 class="font-serif-luxury text-2xl sm:text-3xl font-semibold text-white">${currentGallery.name}</h2>
-            <p class="text-[11px] text-zinc-400 mt-1">Tap <span class="text-amber-400">♥</span> to select for album &bull; Tap <span class="text-yellow-300">★</span> for Cover / Wall Frame</p>
+            <p class="text-[11px] text-zinc-400 mt-1">Double-tap photo for <span class="text-emerald-400">💚</span> &bull; <span class="text-yellow-300">★</span> Cover/Frame &bull; <span class="text-sky-300">💬</span> Add Note</p>
             <div class="mt-3 w-full sm:w-64 h-1.5 bg-white/10 rounded-full overflow-hidden">
               <div class="h-full gold-gradient transition-all duration-300" style="width: ${pct}%"></div>
             </div>
           </div>
 
           <div class="flex flex-wrap items-center gap-1.5 bg-white/5 p-1 rounded-xl border border-white/10 w-fit">
-            <button onclick="setFilter('all')" class="px-3.5 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'all' ? 'bg-white text-black' : 'text-zinc-400 hover:text-white'}">
+            <button onclick="setFilter('all')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'all' ? 'bg-white text-black' : 'text-zinc-400 hover:text-white'}">
               All (${allPhotos.length})
             </button>
-            <button onclick="setFilter('selected')" class="px-3.5 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'selected' ? 'gold-gradient text-black font-semibold' : 'text-zinc-400 hover:text-white'}">
+            <button onclick="setFilter('selected')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'selected' ? 'gold-gradient text-black font-semibold' : 'text-zinc-400 hover:text-white'}">
               ♥ Selected (${count})
             </button>
-            <button onclick="setFilter('unselected')" class="px-3.5 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'unselected' ? 'bg-zinc-200 text-black font-semibold' : 'text-zinc-400 hover:text-white'}">
+            <button onclick="setFilter('unselected')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'unselected' ? 'bg-zinc-200 text-black font-semibold' : 'text-zinc-400 hover:text-white'}">
               Unselected (${unselCount})
             </button>
-            <button onclick="setFilter('starred')" class="px-3.5 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'starred' ? 'bg-yellow-400 text-black font-semibold' : 'text-zinc-400 hover:text-white'}">
-              ★ Cover/Frame (${starCount})
+            <button onclick="setFilter('starred')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'starred' ? 'bg-yellow-400 text-black font-semibold' : 'text-zinc-400 hover:text-white'}">
+              ★ Covers (${starCount})
+            </button>
+            <button onclick="setFilter('notes')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'notes' ? 'bg-sky-400 text-black font-semibold' : 'text-zinc-400 hover:text-white'}">
+              💬 Notes (${notesCount})
             </button>
           </div>
         </div>
@@ -603,25 +709,39 @@
               ${displayPhotos.map(p => {
                 const isSel = selectedSet.has(p.filename);
                 const isStar = starredSet.has(p.filename);
+                const note = commentsMap[p.filename] || "";
                 return `
-                  <div class="relative group bg-zinc-900 rounded-2xl overflow-hidden cursor-pointer transition-all duration-200 ${isSel ? 'selected-ring' : 'border border-white/5 hover:border-white/20'}">
-                    <div class="overflow-hidden aspect-square">
-                      <img src="${p.url}" loading="lazy" onclick="openLightbox(${p.origIdx})" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+                  <div class="relative group bg-zinc-900 rounded-2xl overflow-hidden flex flex-col transition-all duration-200 ${isSel ? 'selected-ring' : 'border border-white/5 hover:border-white/20'}">
+                    <div onclick="handleGridPhotoTap(${p.origIdx}, this)" class="relative overflow-hidden aspect-square cursor-pointer select-none">
+                      <img src="${p.url}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition duration-500 pointer-events-none" />
+                      <!-- STAR (COVER/FRAME) BUTTON -->
+                      <button onclick="toggleStar(${p.origIdx}, event)" title="Mark as Album Cover / Frame" class="absolute top-2 left-2 w-8 h-8 rounded-full flex items-center justify-center text-sm shadow-xl backdrop-blur-md transition cursor-pointer ${isStar ? 'bg-yellow-400 text-black scale-105' : 'bg-black/55 text-white/80 hover:bg-yellow-400 hover:text-black'}">
+                        ★
+                      </button>
+                      <!-- HEART (SELECT) BUTTON -->
+                      <button onclick="toggleSelect(${p.origIdx}, event)" title="Select Photo" class="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center text-sm shadow-xl backdrop-blur-md transition cursor-pointer ${isSel ? 'gold-gradient text-black scale-105' : 'bg-black/55 text-white hover:bg-amber-400 hover:text-black'}">
+                        ♥
+                      </button>
+                      <!-- COMMENT BUTTON -->
+                      <button onclick="promptComment(${p.origIdx}, event)" title="Add / Edit Note" class="absolute bottom-2 left-2 w-8 h-8 rounded-full flex items-center justify-center text-xs shadow-xl backdrop-blur-md transition cursor-pointer ${note ? 'bg-sky-400 text-black' : 'bg-black/55 text-white/80 hover:bg-sky-400 hover:text-black'}">
+                        💬
+                      </button>
+                      <!-- ADMIN DELETE PHOTO BUTTON -->
+                      ${isAdminViewing ? `
+                        <button onclick="deleteSinglePhoto(${p.origIdx}, event)" title="Delete Photo from Gallery" class="absolute bottom-2 right-2 w-8 h-8 rounded-full flex items-center justify-center text-xs shadow-xl backdrop-blur-md bg-red-600/80 hover:bg-red-500 text-white transition cursor-pointer">
+                          🗑
+                        </button>
+                      ` : ''}
                     </div>
-                    <!-- STAR (COVER/FRAME) BUTTON -->
-                    <button onclick="toggleStar(${p.origIdx}, event)" title="Mark as Album Cover / Frame" class="absolute top-2.5 left-2.5 w-8 h-8 rounded-full flex items-center justify-center text-sm shadow-xl backdrop-blur-md transition cursor-pointer ${isStar ? 'bg-yellow-400 text-black scale-105' : 'bg-black/50 text-white/80 hover:bg-yellow-400 hover:text-black'}">
-                      ★
-                    </button>
-                    <!-- HEART (SELECT) BUTTON -->
-                    <button onclick="toggleSelect(${p.origIdx}, event)" title="Select Photo" class="absolute top-2.5 right-2.5 w-8 h-8 rounded-full flex items-center justify-center text-sm shadow-xl backdrop-blur-md transition cursor-pointer ${isSel ? 'gold-gradient text-black scale-105' : 'bg-black/50 text-white hover:bg-amber-400 hover:text-black'}">
-                      ♥
-                    </button>
-                    <div class="px-3 py-2 text-[10px] text-zinc-400 truncate bg-zinc-950/90 flex items-center justify-between">
-                      <span class="truncate">${p.filename}</span>
-                      <span class="flex items-center gap-1 ml-1">
-                        ${isStar ? '<span class="text-yellow-300 font-bold">★</span>' : ''}
-                        ${isSel ? '<span class="text-amber-400 font-semibold">✓</span>' : ''}
-                      </span>
+                    <div class="px-3 py-2 text-[10px] text-zinc-400 bg-zinc-950/90 flex-1 flex flex-col justify-center">
+                      <div class="flex items-center justify-between">
+                        <span class="truncate">${p.filename}</span>
+                        <span class="flex items-center gap-1 ml-1 shrink-0">
+                          ${isStar ? '<span class="text-yellow-300 font-bold">★</span>' : ''}
+                          ${isSel ? '<span class="text-amber-400 font-semibold">✓</span>' : ''}
+                        </span>
+                      </div>
+                      ${note ? `<p class="text-[10px] text-sky-300 mt-1 truncate" title="${escapeHtml(note)}">💬 ${escapeHtml(note)}</p>` : ''}
                     </div>
                   </div>
                 `;
@@ -687,11 +807,51 @@
       });
     };
 
+    window.promptComment = async (idx, e) => {
+      if (e) e.stopPropagation();
+      const filename = currentGallery.photos[idx].filename;
+      const existing = commentsMap[filename] || "";
+      const note = prompt(`Add a note / retouching comment for ${filename}:`, existing);
+      if (note === null) return;
+      const trimmed = note.trim();
+      if (trimmed) {
+        commentsMap[filename] = trimmed;
+      } else {
+        delete commentsMap[filename];
+      }
+      renderClientPhotos();
+      await updateDoc(doc(db, "galleries", currentGallery.id), {
+        comments: commentsMap
+      });
+    };
+
+    window.deleteSinglePhoto = async (idx, e) => {
+      if (e) e.stopPropagation();
+      if (!isAdminViewing) return;
+      const photo = currentGallery.photos[idx];
+      if (!confirm(`Delete "${photo.filename}" from this gallery?`)) return;
+
+      currentGallery.photos.splice(idx, 1);
+      selectedSet.delete(photo.filename);
+      starredSet.delete(photo.filename);
+      delete commentsMap[photo.filename];
+
+      await updateDoc(doc(db, "galleries", currentGallery.id), {
+        photos: currentGallery.photos,
+        selected: Array.from(selectedSet),
+        starred: Array.from(starredSet),
+        comments: commentsMap
+      });
+
+      renderClientPhotos();
+    };
+
     window.submitSelection = async () => {
       if (!confirm(`Submit ${selectedSet.size} selected photos (${starredSet.size} Cover/Frame) to ${STUDIO_NAME}?`)) return;
       await updateDoc(doc(db, "galleries", currentGallery.id), {
         selected: Array.from(selectedSet),
         starred: Array.from(starredSet),
+        comments: commentsMap,
         submitted: true
       });
       currentGallery.submitted = true;
@@ -715,11 +875,13 @@
     };
 
     window.prevPhoto = () => {
+      if (!currentGallery.photos.length) return;
       lightboxIndex = (lightboxIndex - 1 + currentGallery.photos.length) % currentGallery.photos.length;
       updateLightboxUI();
     };
 
     window.nextPhoto = () => {
+      if (!currentGallery.photos.length) return;
       lightboxIndex = (lightboxIndex + 1) % currentGallery.photos.length;
       updateLightboxUI();
     };
@@ -734,9 +896,40 @@
       updateLightboxUI();
     };
 
+    window.saveLightboxComment = async () => {
+      const p = currentGallery.photos[lightboxIndex];
+      const val = document.getElementById("lightboxCommentInput").value.trim();
+      if (val) {
+        commentsMap[p.filename] = val;
+      } else {
+        delete commentsMap[p.filename];
+      }
+      renderClientPhotos();
+      await updateDoc(doc(db, "galleries", currentGallery.id), {
+        comments: commentsMap
+      });
+      alert("Note saved!");
+    };
+
+    window.deleteCurrentLightboxPhoto = async () => {
+      await window.deleteSinglePhoto(lightboxIndex);
+      if (currentGallery.photos.length === 0) {
+        window.closeLightbox();
+      } else {
+        if (lightboxIndex >= currentGallery.photos.length) {
+          lightboxIndex = currentGallery.photos.length - 1;
+        }
+        updateLightboxUI();
+      }
+    };
+
     document.addEventListener("keydown", (e) => {
       const lb = document.getElementById("lightbox");
       if (lb.classList.contains("hidden")) return;
+      if (document.activeElement && document.activeElement.tagName === "INPUT") {
+        if (e.key === "Enter") window.saveLightboxComment();
+        return;
+      }
       if (e.key === "Escape") window.closeLightbox();
       if (e.key === "ArrowLeft") window.prevPhoto();
       if (e.key === "ArrowRight") window.nextPhoto();
@@ -762,6 +955,11 @@
       const p = currentGallery.photos[lightboxIndex];
       document.getElementById("lightboxImg").src = p.url;
       document.getElementById("lightboxFilename").innerText = `${p.filename}  •  ${lightboxIndex + 1} / ${currentGallery.photos.length}`;
+      document.getElementById("lightboxCommentInput").value = commentsMap[p.filename] || "";
+
+      const delBtn = document.getElementById("lightboxDeleteBtn");
+      if (isAdminViewing) delBtn.classList.remove("hidden");
+      else delBtn.classList.add("hidden");
 
       const selBtn = document.getElementById("lightboxSelectBtn");
       if (selectedSet.has(p.filename)) {
