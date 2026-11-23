@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Client Photo Selection</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background-color: #0f0f11; color: #f4f4f5; font-family: system-ui, -apple-system, sans-serif; }
+    .selected-ring { box-shadow: 0 0 0 3px #f43f5e; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- ================= HEADER ================= -->
+  <header class="sticky top-0 z-30 bg-zinc-950/90 backdrop-blur border-b border-zinc-800 px-4 py-3 flex items-center justify-between">
+    <div>
+      <h1 id="studioTitle" class="text-lg font-bold tracking-wide text-white">STUDIO GALLERY</h1>
+      <p id="subTitle" class="text-xs text-zinc-400">Client Photo Selection</p>
+    </div>
+    <div id="headerActions" class="flex items-center gap-3"></div>
+  </header>
+
+  <!-- ================= MAIN CONTAINER ================= -->
+  <main id="app" class="flex-1 max-w-7xl w-full mx-auto p-4"></main>
+
+  <!-- ================= LIGHTBOX MODAL ================= -->
+  <div id="lightbox" class="fixed inset-0 z-50 bg-black/95 hidden flex-col items-center justify-center p-4">
+    <button onclick="closeLightbox()" class="absolute top-4 right-4 text-white bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 rounded-lg text-sm">✕ Close</button>
+    <img id="lightboxImg" src="" class="max-h-[80vh] max-w-[95vw] object-contain rounded-lg select-none" />
+    <div class="mt-4 flex items-center gap-4">
+      <button onclick="prevPhoto()" class="bg-zinc-800 hover:bg-zinc-700 px-4 py-2 rounded-lg text-sm">← Prev</button>
+      <button id="lightboxSelectBtn" onclick="toggleCurrentLightboxSelect()" class="px-5 py-2 rounded-lg font-semibold text-sm bg-zinc-800 hover:bg-rose-600 transition">♥ Select</button>
+      <button onclick="nextPhoto()" class="bg-zinc-800 hover:bg-zinc-700 px-4 py-2 rounded-lg text-sm">Next →</button>
+    </div>
+    <p id="lightboxFilename" class="mt-2 text-xs text-zinc-400"></p>
+  </div>
+
+  <!-- ================= APP LOGIC ================= -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, getDoc, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // =========================================================================
+    // 1. CONFIG SECTION (INGA UNODA DETAILS-AH PASTE PANNU)
+    // =========================================================================
+    const STUDIO_NAME = "MY PHOTOGRAPHY STUDIO";
+    const ADMIN_PASSWORD = "admin123"; // Admin page password-ah maathiko
+
+    const CLOUDINARY_CLOUD_NAME = "YOUR_CLOUD_NAME";
+    const CLOUDINARY_UPLOAD_PRESET = "YOUR_UNSIGNED_PRESET";
+
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+    // =========================================================================
+
+    document.getElementById("studioTitle").innerText = STUDIO_NAME;
+    const fbApp = initializeApp(firebaseConfig);
+    const db = getFirestore(fbApp);
+
+    const params = new URLSearchParams(window.location.search);
+    const isAdmin = params.get("admin") === "true";
+    const galleryId = params.get("gallery");
+
+    // Global State
+    let currentGallery = null;
+    let selectedSet = new Set();
+    let lightboxIndex = 0;
+
+    // Cloudinary Fast Image Helper
+    function optimizeUrl(url, width = 800) {
+      if (!url.includes("/upload/")) return url;
+      return url.replace("/upload/", `/upload/f_auto,q_auto,w_${width}/`);
+    }
+
+    // =========================================================================
+    // ROUTER
+    // =========================================================================
+    if (isAdmin) {
+      renderAdminLogin();
+    } else if (galleryId) {
+      loadClientGallery(galleryId);
+    } else {
+      document.getElementById("app").innerHTML = `
+        <div class="text-center py-24">
+          <h2 class="text-2xl font-bold mb-2">Welcome to ${STUDIO_NAME}</h2>
+          <p class="text-zinc-400 text-sm">Please use the private gallery link shared by your photographer.</p>
+        </div>`;
+    }
+
+    // =========================================================================
+    // ADMIN SECTION
+    // =========================================================================
+    function renderAdminLogin() {
+      document.getElementById("subTitle").innerText = "Admin Dashboard";
+      document.getElementById("app").innerHTML = `
+        <div class="max-w-sm mx-auto mt-16 bg-zinc-900 border border-zinc-800 p-6 rounded-2xl">
+          <h2 class="text-lg font-bold mb-4">Admin Login</h2>
+          <input id="adminPassInput" type="password" placeholder="Enter Admin Password" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 mb-4 text-sm focus:outline-none focus:border-rose-500" />
+          <button id="loginBtn" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-semibold py-2 rounded-lg text-sm">Login</button>
+        </div>`;
+      document.getElementById("loginBtn").onclick = () => {
+        if (document.getElementById("adminPassInput").value === ADMIN_PASSWORD) {
+          renderAdminDashboard();
+        } else {
+          alert("Wrong Password!");
+        }
+      };
+    }
+
+    async function renderAdminDashboard() {
+      const appEl = document.getElementById("app");
+      appEl.innerHTML = `
+        <div class="grid md:grid-cols-3 gap-6">
+          <!-- Create New Gallery -->
+          <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl h-fit">
+            <h2 class="text-base font-bold mb-4">Create New Client Gallery</h2>
+            <div class="space-y-3 text-sm">
+              <input id="clientName" placeholder="Client / Event Name (e.g. Karthik Wedding)" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2" />
+              <input id="clientPin" placeholder="4-Digit PIN (e.g. 2026)" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2" />
+              <input id="maxLimit" type="number" value="150" placeholder="Max Photo Limit" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2" />
+              <div>
+                <label class="block text-xs text-zinc-400 mb-1">Select Compressed JPEGs (Bulk Upload)</label>
+                <input id="photoFiles" type="file" multiple accept="image/*" class="w-full text-xs text-zinc-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-zinc-800 file:text-white hover:file:bg-zinc-700" />
+              </div>
+              <button id="createBtn" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-semibold py-2.5 rounded-lg">Upload & Create Gallery</button>
+              <p id="uploadStatus" class="text-xs text-amber-400 hidden"></p>
+            </div>
+          </div>
+
+          <!-- Existing Galleries -->
+          <div class="md:col-span-2 bg-zinc-900 border border-zinc-800 p-5 rounded-2xl">
+            <h2 class="text-base font-bold mb-4">Client Galleries</h2>
+            <div id="galleryList" class="space-y-3 text-sm text-zinc-400">Loading galleries...</div>
+          </div>
+        </div>`;
+
+      document.getElementById("createBtn").onclick = handleCreateGallery;
+      loadAdminGalleries();
+    }
+
+    async function handleCreateGallery() {
+      const name = document.getElementById("clientName").value.trim();
+      const pin = document.getElementById("clientPin").value.trim();
+      const maxLimit = parseInt(document.getElementById("maxLimit").value) || 150;
+      const files = document.getElementById("photoFiles").files;
+      const statusEl = document.getElementById("uploadStatus");
+
+      if (!name || !pin || files.length === 0) {
+        return alert("Please enter Client Name, PIN, and select at least 1 photo.");
+      }
+
+      const btn = document.getElementById("createBtn");
+      btn.disabled = true;
+      statusEl.classList.remove("hidden");
+
+      const uploadedPhotos = [];
+      for (let i = 0; i < files.length; i++) {
+        statusEl.innerText = `Uploading ${i + 1} of ${files.length}... (${files[i].name})`;
+        const formData = new FormData();
+        formData.append("file", files[i]);
+        formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+          method: "POST",
+          body: formData
+        });
+        const data = await res.json();
+        if (data.secure_url) {
+          uploadedPhotos.push({
+            url: data.secure_url,
+            filename: files[i].name.replace(/\.[^/.]+$/, "") // Remove .jpg for Lightroom filter
+          });
+        }
+      }
+
+      statusEl.innerText = "Saving gallery to database...";
+      await addDoc(collection(db, "galleries"), {
+        name,
+        pin,
+        maxLimit,
+        photos: uploadedPhotos,
+        selected: [],
+        submitted: false,
+        createdAt: Date.now()
+      });
+
+      statusEl.innerText = "Done! Gallery created.";
+      btn.disabled = false;
+      loadAdminGalleries();
+    }
+
+    async function loadAdminGalleries() {
+      const listEl = document.getElementById("galleryList");
+      const snap = await getDocs(collection(db, "galleries"));
+      if (snap.empty) {
+        listEl.innerHTML = "<p>No galleries yet. Create your first one!</p>";
+        return;
+      }
+
+      listEl.innerHTML = "";
+      snap.forEach((docSnap) => {
+        const g = docSnap.data();
+        const id = docSnap.id;
+        const shareLink = `${window.location.origin}${window.location.pathname}?gallery=${id}`;
+        const selectedNames = (g.selected || []).join(", ");
+
+        const card = document.createElement("div");
+        card.className = "bg-zinc-950 border border-zinc-800 p-4 rounded-xl flex flex-col gap-3";
+        card.innerHTML = `
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <h3 class="font-bold text-white">${g.name}</h3>
+              <p class="text-xs text-zinc-400">PIN: <span class="text-white font-mono">${g.pin}</span> • Photos: ${g.photos.length} • Selected: <span class="text-rose-400 font-bold">${g.selected?.length || 0} / ${g.maxLimit}</span></p>
+            </div>
+            <span class="text-xs px-2 py-1 rounded ${g.submitted ? 'bg-emerald-900/50 text-emerald-300' : 'bg-amber-900/40 text-amber-300'}">
+              ${g.submitted ? 'Submitted' : 'In Progress'}
+            </span>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="navigator.clipboard.writeText('${shareLink}'); alert('Client link copied!')" class="bg-zinc-800 hover:bg-zinc-700 text-white text-xs px-3 py-1.5 rounded-lg">Copy Client Link</button>
+            <button onclick="navigator.clipboard.writeText('${selectedNames}'); alert('Lightroom filenames copied!')" class="bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 text-xs px-3 py-1.5 rounded-lg">Copy Lightroom Filenames (${g.selected?.length || 0})</button>
+            <button data-del="${id}" class="delBtn bg-zinc-900 hover:bg-red-900/50 text-zinc-400 hover:text-red-300 text-xs px-3 py-1.5 rounded-lg ml-auto">Delete</button>
+          </div>`;
+        listEl.appendChild(card);
+      });
+
+      document.querySelectorAll(".delBtn").forEach(btn => {
+        btn.onclick = async () => {
+          if (confirm("Delete this gallery from database?")) {
+            await deleteDoc(doc(db, "galleries", btn.dataset.del));
+            loadAdminGalleries();
+          }
+        };
+      });
+    }
+
+    // =========================================================================
+    // CLIENT SECTION
+    // =========================================================================
+    async function loadClientGallery(id) {
+      const docRef = doc(db, "galleries", id);
+      const snap = await getDoc(docRef);
+      if (!snap.exists()) {
+        document.getElementById("app").innerHTML = `<p class="text-center py-20 text-zinc-400">Gallery not found.</p>`;
+        return;
+      }
+
+      currentGallery = { id, ...snap.data() };
+      selectedSet = new Set(currentGallery.selected || []);
+      document.getElementById("subTitle").innerText = currentGallery.name;
+
+      // PIN Screen
+      document.getElementById("app").innerHTML = `
+        <div class="max-w-sm mx-auto mt-16 bg-zinc-900 border border-zinc-800 p-6 rounded-2xl text-center">
+          <h2 class="text-lg font-bold mb-1">${currentGallery.name}</h2>
+          <p class="text-xs text-zinc-400 mb-4">Enter 4-digit PIN to view & select photos</p>
+          <input id="pinInput" type="password" inputmode="numeric" placeholder="Enter PIN" class="w-full text-center tracking-widest text-lg bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 mb-4" />
+          <button id="unlockBtn" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-semibold py-2 rounded-lg text-sm">Open Gallery</button>
+        </div>`;
+
+      document.getElementById("unlockBtn").onclick = () => {
+        if (document.getElementById("pinInput").value.trim() === currentGallery.pin) {
+          renderClientGrid();
+        } else {
+          alert("Incorrect PIN. Please try again.");
+        }
+      };
+    }
+
+    function renderClientGrid() {
+      updateHeaderCounter();
+      const appEl = document.getElementById("app");
+      appEl.innerHTML = `<div id="photoGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3"></div>`;
+
+      const grid = document.getElementById("photoGrid");
+      currentGallery.photos.forEach((photo, idx) => {
+        const isSelected = selectedSet.has(photo.filename);
+        const card = document.createElement("div");
+        card.id = `card-${idx}`;
+        card.className = `relative group rounded-xl overflow-hidden bg-zinc-900 aspect-square cursor-pointer ${isSelected ? 'selected-ring' : ''}`;
+        card.innerHTML = `
+          <img src="${optimizeUrl(photo.url, 600)}" loading="lazy" onclick="openLightbox(${idx})" class="w-full h-full object-cover transition duration-300 group-hover:scale-105" />
+          <button id="heart-${idx}" onclick="event.stopPropagation(); toggleSelect(${idx})" class="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center text-sm shadow-lg transition ${isSelected ? 'bg-rose-600 text-white' : 'bg-black/60 text-white hover:bg-black/80'}">
+            ♥
+          </button>
+          <div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent p-2 pointer-events-none">
+            <p class="text-[11px] text-zinc-300 truncate">${photo.filename}</p>
+          </div>`;
+        grid.appendChild(card);
+      });
+    }
+
+    function updateHeaderCounter() {
+      const actions = document.getElementById("headerActions");
+      actions.innerHTML = `
+        <span class="text-xs sm:text-sm font-semibold bg-zinc-800 px-3 py-1.5 rounded-lg">
+          <span class="text-rose-400">${selectedSet.size}</span> / ${currentGallery.maxLimit} Selected
+        </span>
+        ${currentGallery.submitted
+          ? `<span class="text-xs bg-emerald-900/60 text-emerald-300 px-3 py-1.5 rounded-lg font-semibold">✓ Submitted</span>`
+          : `<button id="submitBtn" class="bg-rose-600 hover:bg-rose-500 text-white text-xs sm:text-sm font-semibold px-4 py-1.5 rounded-lg">Final Submit</button>`
+        }`;
+
+      const submitBtn = document.getElementById("submitBtn");
+      if (submitBtn) {
+        submitBtn.onclick = async () => {
+          if (!confirm(`Submit ${selectedSet.size} selected photos? After submitting, you cannot change your selection.`)) return;
+          currentGallery.submitted = true;
+          await updateDoc(doc(db, "galleries", currentGallery.id), {
+            selected: Array.from(selectedSet),
+            submitted: true
+          });
+          updateHeaderCounter();
+          alert("Thank you! Your photo selection has been sent to the photographer.");
+        };
+      }
+    }
+
+    window.toggleSelect = async (idx) => {
+      if (currentGallery.submitted) return alert("Selection is already submitted and locked.");
+      const fname = currentGallery.photos[idx].filename;
+
+      if (selectedSet.has(fname)) {
+        selectedSet.delete(fname);
+      } else {
+        if (selectedSet.size >= currentGallery.maxLimit) {
+          return alert(`Maximum limit of ${currentGallery.maxLimit} photos reached!`);
+        }
+        selectedSet.add(fname);
+      }
+
+      // Update UI immediately
+      const card = document.getElementById(`card-${idx}`);
+      const heart = document.getElementById(`heart-${idx}`);
+      const isSelected = selectedSet.has(fname);
+      card.classList.toggle("selected-ring", isSelected);
+      heart.className = `absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center text-sm shadow-lg transition ${isSelected ? 'bg-rose-600 text-white' : 'bg-black/60 text-white hover:bg-black/80'}`;
+      updateHeaderCounter();
+      updateLightboxButton();
+
+      // Auto-save to Firebase
+      await updateDoc(doc(db, "galleries", currentGallery.id), {
+        selected: Array.from(selectedSet)
+      });
+    };
+
+    // Lightbox Functions
+    window.openLightbox = (idx) => {
+      lightboxIndex = idx;
+      const photo = currentGallery.photos[idx];
+      document.getElementById("lightboxImg").src = optimizeUrl(photo.url, 1600);
+      document.getElementById("lightboxFilename").innerText = photo.filename;
+      document.getElementById("lightbox").classList.remove("hidden");
+      document.getElementById("lightbox").classList.add("flex");
+      updateLightboxButton();
+    };
+    window.closeLightbox = () => {
+      document.getElementById("lightbox").classList.add("hidden");
+      document.getElementById("lightbox").classList.remove("flex");
+    };
+    window.prevPhoto = () => {
+      lightboxIndex = (lightboxIndex - 1 + currentGallery.photos.length) % currentGallery.photos.length;
+      window.openLightbox(lightboxIndex);
+    };
+    window.nextPhoto = () => {
+      lightboxIndex = (lightboxIndex + 1) % currentGallery.photos.length;
+      window.openLightbox(lightboxIndex);
+    };
+    window.toggleCurrentLightboxSelect = () => window.toggleSelect(lightboxIndex);
+
+    function updateLightboxButton() {
+      const btn = document.getElementById("lightboxSelectBtn");
+      if (!btn || !currentGallery) return;
+      const fname = currentGallery.photos[lightboxIndex]?.filename;
+      if (selectedSet.has(fname)) {
+        btn.innerText = "♥ Selected";
+        btn.className = "px-5 py-2 rounded-lg font-semibold text-sm bg-rose-600 text-white transition";
+      } else {
+        btn.innerText = "♡ Select";
+        btn.className = "px-5 py-2 rounded-lg font-semibold text-sm bg-zinc-800 hover:bg-rose-600 text-white transition";
+      }
+    }
+  </script>
+</body>
+</html>
