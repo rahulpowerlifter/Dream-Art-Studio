@@ -126,7 +126,7 @@
     <!-- LIGHTBOX COMMENT BOX -->
     <div class="mt-3 w-full max-w-md flex items-center gap-2">
       <input id="lightboxCommentInput" type="text" placeholder="Add a note (e.g. Retouch background, B&W)..." class="flex-1 bg-white/10 border border-white/15 rounded-full px-4 py-2 text-xs text-white placeholder-zinc-400 outline-none focus:border-amber-400 transition" />
-      <button onclick="saveLightboxComment()" class="gold-gradient text-black font-semibold text-xs px-4 py-2 rounded-full hover:opacity-90 transition cursor-pointer">Save</button>
+      <button id="lightboxSaveNoteBtn" onclick="saveLightboxComment()" class="gold-gradient text-black font-semibold text-xs px-4 py-2 rounded-full hover:opacity-90 transition cursor-pointer">Save</button>
     </div>
     <p id="lightboxFilename" class="mt-2.5 text-xs text-zinc-400 tracking-wide"></p>
   </div>
@@ -175,7 +175,7 @@
   <div id="submitSuccessModal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden items-center justify-center p-4">
     <div class="bg-zinc-950 border border-emerald-500/30 rounded-3xl max-w-sm w-full p-7 text-center shadow-2xl">
       <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-3xl text-emerald-400">✓</div>
-      <h3 class="font-serif-luxury text-xl font-semibold text-white mb-2">Selection Saved!</h3>
+      <h3 class="font-serif-luxury text-xl font-semibold text-white mb-2">Selection Locked!</h3>
       <p id="submitSummaryText" class="text-xs text-zinc-400 leading-relaxed mb-6"></p>
       <a id="whatsappAlertLink" href="#" target="_blank" onclick="closeSubmitModal()" class="block w-full bg-emerald-500 hover:bg-emerald-400 text-black font-semibold py-3 rounded-xl text-sm transition mb-3">
         📲 Send WhatsApp Alert to Studio
@@ -233,6 +233,7 @@
     let foldersList = [];
     let lightboxIndex = 0;
     let activeFilter = "all"; // "all", "selected", "unselected", "starred", "notes", "folders", "hidden"
+    let searchQuery = "";
     let addMoreTargetId = null;
     let isAdminViewing = false;
 
@@ -247,6 +248,10 @@
     let editingFolderId = null;
     let folderDraftSet = new Set();
     let folderPickerFilter = "selected";
+
+    function isGalleryLocked() {
+      return !isAdminViewing && Boolean(currentGallery && (currentGallery.locked || currentGallery.submitted));
+    }
 
     function escapeHtml(str) {
       return String(str || "").replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
@@ -266,6 +271,10 @@
     // CUSTOM FOLDER BUILDER FUNCTIONS
     // =========================================================
     window.openFolderModal = (editId = null, preselectFilename = null) => {
+      if (isGalleryLocked()) {
+        alert("This gallery is locked after submission. Contact studio to unlock.");
+        return;
+      }
       editingFolderId = editId;
       folderDraftSet = new Set();
       folderPickerFilter = selectedSet.size > 0 ? "selected" : "all";
@@ -356,6 +365,7 @@
     }
 
     window.saveFolder = async () => {
+      if (isGalleryLocked()) return;
       const name = document.getElementById("folderNameInput").value.trim();
       if (!name) {
         alert("Please enter a folder name (e.g. Reception, Family, Album 1).");
@@ -400,6 +410,7 @@
 
     window.quickFolderPhoto = async (origIdx, e) => {
       if (e) e.stopPropagation();
+      if (isGalleryLocked()) return;
       const filename = currentGallery.photos[origIdx].filename;
       if (foldersList.length === 0) {
         window.openFolderModal(null, filename);
@@ -432,6 +443,7 @@
     };
 
     window.deleteFolder = async (folderId) => {
+      if (isGalleryLocked()) return;
       if (!confirm("Delete this folder? (Photos will stay in the gallery)")) return;
       foldersList = foldersList.filter(f => f.id !== folderId);
       await updateDoc(doc(db, "galleries", currentGallery.id), {
@@ -493,6 +505,7 @@
     }
 
     async function selectPhotoOnly(idx, delayRender = false) {
+      if (isGalleryLocked()) return false;
       const filename = currentGallery.photos[idx].filename;
       if (hiddenSet.has(filename)) {
         hiddenSet.delete(filename);
@@ -517,6 +530,10 @@
     }
 
     window.handleGridPhotoTap = (idx, el) => {
+      if (isGalleryLocked()) {
+        window.openLightbox(idx);
+        return;
+      }
       const now = Date.now();
       if (lastTapIdx === idx && (now - lastTapTime) < 300) {
         clearTimeout(singleTapTimer);
@@ -534,6 +551,7 @@
     };
 
     window.handleLightboxTap = async () => {
+      if (isGalleryLocked()) return;
       const now = Date.now();
       if (now - lastLightboxTap < 300 && !isAutoSliding) {
         lastLightboxTap = 0;
@@ -652,6 +670,7 @@
     window.backToAdminDashboard = () => {
       isAdminViewing = false;
       currentGallery = null;
+      searchQuery = "";
       document.getElementById("headerActions").innerHTML = "";
       renderAdminDashboard();
     };
@@ -776,12 +795,24 @@
         comments: {},
         folders: [],
         submitted: false,
+        locked: false,
         createdAt: Date.now()
       });
 
       alert(`Gallery Created! ${uploadedPhotos.length} photos uploaded.` + (failedCount > 0 ? ` (${failedCount} failed)` : ""));
       renderAdminDashboard();
     }
+
+    // --- ADMIN LOCK / UNLOCK GALLERY ---
+    window.toggleAdminGalleryLock = async (id, currentlyLocked) => {
+      const action = currentlyLocked ? "Unlock" : "Lock";
+      if (!confirm(`${action} this gallery for the client?`)) return;
+      await updateDoc(doc(db, "galleries", id), {
+        locked: !currentlyLocked,
+        submitted: !currentlyLocked
+      });
+      loadAdminGalleries();
+    };
 
     // --- ADMIN DIRECT GALLERY VIEW (NO PIN NEEDED) ---
     window.openAdminGalleryView = async (id) => {
@@ -794,6 +825,7 @@
       commentsMap = currentGallery.comments || {};
       foldersList = currentGallery.folders || [];
       activeFilter = "all";
+      searchQuery = "";
       isAdminViewing = true;
       document.getElementById("subTitle").innerText = `Admin View • ${currentGallery.name}`;
       renderClientPhotos();
@@ -889,8 +921,9 @@
         const notesCount = Object.values(g.comments || {}).filter(c => c && c.trim()).length;
         const folCount = (g.folders || []).length;
         const hidCount = (g.hidden || []).length;
-        const badge = g.submitted
-          ? `<span class="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full">✓ Submitted</span>`
+        const isLocked = Boolean(g.locked || g.submitted);
+        const badge = isLocked
+          ? `<span class="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full">🔒 Submitted & Locked</span>`
           : `<span class="bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full">In Progress</span>`;
 
         return `
@@ -913,6 +946,7 @@
               </div>
               <div class="flex flex-wrap gap-2">
                 <button onclick="openAdminGalleryView('${g.id}')" class="bg-blue-500/15 hover:bg-blue-500/30 text-blue-300 border border-blue-500/30 text-xs px-3 py-2 rounded-xl transition cursor-pointer">View</button>
+                <button onclick="toggleAdminGalleryLock('${g.id}', ${isLocked})" class="${isLocked ? 'bg-amber-500/20 hover:bg-amber-500/35 text-amber-300 border border-amber-500/30' : 'bg-zinc-700/40 hover:bg-zinc-700 text-zinc-300 border border-white/10'} text-xs px-3 py-2 rounded-xl transition cursor-pointer">${isLocked ? '🔓 Unlock' : '🔒 Lock'}</button>
                 <button onclick="triggerAddPhotos('${g.id}')" class="bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-xs px-3 py-2 rounded-xl transition cursor-pointer">+ Add Photos</button>
                 <button onclick="copyLink('${shareUrl}')" class="bg-white/10 hover:bg-white/20 text-white text-xs px-3 py-2 rounded-xl transition cursor-pointer">Copy Link</button>
                 <button onclick="exportLightroom('${g.id}')" class="gold-gradient text-black font-semibold text-xs px-3 py-2 rounded-xl hover:opacity-90 transition cursor-pointer">Export All</button>
@@ -980,6 +1014,7 @@
       hiddenSet = new Set(currentGallery.hidden || []);
       commentsMap = currentGallery.comments || {};
       foldersList = currentGallery.folders || [];
+      searchQuery = "";
       document.getElementById("subTitle").innerText = currentGallery.name;
 
       if (sessionStorage.getItem("unlocked_" + id) === "true") {
@@ -1017,29 +1052,49 @@
       renderClientPhotos();
     };
 
-    function renderClientPhotos() {
-      updateClientHeader();
-      const allPhotos = currentGallery.photos || [];
-      const visiblePhotos = allPhotos.filter(p => !hiddenSet.has(p.filename));
-      const count = selectedSet.size;
-      const hidCount = hiddenSet.size;
-      const unselCount = visiblePhotos.filter(p => !selectedSet.has(p.filename)).length;
-      const starCount = starredSet.size;
-      const notesCount = allPhotos.filter(p => commentsMap[p.filename] && commentsMap[p.filename].trim()).length;
-      const folCount = foldersList.length;
-      const limit = currentGallery.maxLimit;
-      const pct = Math.min(100, Math.round((count / limit) * 100));
+    window.handlePhotoSearch = (val) => {
+      searchQuery = val;
+      const clearBtn = document.getElementById("clearSearchBtn");
+      if (clearBtn) {
+        if (val.trim()) clearBtn.classList.remove("hidden");
+        else clearBtn.classList.add("hidden");
+      }
+      const gridWrap = document.getElementById("galleryContentWrap");
+      if (gridWrap) {
+        gridWrap.innerHTML = buildGalleryContentHtml();
+      }
+    };
 
-      let contentHtml = "";
+    window.clearPhotoSearch = () => {
+      searchQuery = "";
+      const input = document.getElementById("photoSearchInput");
+      if (input) {
+        input.value = "";
+        input.focus();
+      }
+      window.handlePhotoSearch("");
+    };
+
+    function buildGalleryContentHtml() {
+      const allPhotos = currentGallery.photos || [];
+      const q = searchQuery.trim().toLowerCase();
+      const locked = isGalleryLocked();
 
       if (activeFilter === "folders") {
-        contentHtml = foldersList.length === 0
+        const filteredFolders = q
+          ? foldersList.filter(f =>
+              f.name.toLowerCase().includes(q) ||
+              (f.photos || []).some(fn => fn.toLowerCase().includes(q))
+            )
+          : foldersList;
+
+        return filteredFolders.length === 0
           ? `<div class="text-center py-20">
-               <p class="text-zinc-400 text-sm mb-4">No custom folders yet. Create folders (e.g., Reception, Family, Album 1) and organize your selected photos!</p>
-               <button onclick="openFolderModal()" class="bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs px-5 py-2.5 rounded-xl cursor-pointer">📁 + Create Your First Folder</button>
+               <p class="text-zinc-400 text-sm mb-4">${q ? `No folders matching "${escapeHtml(searchQuery)}"` : 'No custom folders yet.'}</p>
+               ${!q && !locked ? `<button onclick="openFolderModal()" class="bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs px-5 py-2.5 rounded-xl cursor-pointer">📁 + Create Your First Folder</button>` : ''}
              </div>`
           : `<div class="grid md:grid-cols-2 gap-5">
-              ${foldersList.map(f => {
+              ${filteredFolders.map(f => {
                 const fPhotos = (f.photos || []).map(fn => allPhotos.find(p => p.filename === fn)).filter(Boolean);
                 return `
                   <div class="glass-card p-4 rounded-3xl flex flex-col gap-3">
@@ -1049,9 +1104,9 @@
                         <h3 class="text-base font-semibold text-white mt-2">📁 ${escapeHtml(f.name)}</h3>
                       </div>
                       <div class="flex flex-wrap gap-1.5 shrink-0">
-                        <button onclick="openFolderModal(${f.id})" class="bg-white/10 hover:bg-white/20 text-white text-[11px] px-3 py-1.5 rounded-lg transition cursor-pointer">Edit</button>
+                        ${!locked ? `<button onclick="openFolderModal(${f.id})" class="bg-white/10 hover:bg-white/20 text-white text-[11px] px-3 py-1.5 rounded-lg transition cursor-pointer">Edit</button>` : ''}
                         <button onclick="copyFolderFilenames(${f.id})" class="gold-gradient text-black font-semibold text-[11px] px-3 py-1.5 rounded-lg transition cursor-pointer">Copy Names</button>
-                        <button onclick="deleteFolder(${f.id})" class="bg-red-500/15 hover:bg-red-500/30 text-red-300 text-[11px] px-2.5 py-1.5 rounded-lg transition cursor-pointer">🗑</button>
+                        ${!locked ? `<button onclick="deleteFolder(${f.id})" class="bg-red-500/15 hover:bg-red-500/30 text-red-300 text-[11px] px-2.5 py-1.5 rounded-lg transition cursor-pointer">🗑</button>` : ''}
                       </div>
                     </div>
                     <div class="grid grid-cols-4 sm:grid-cols-5 gap-1.5 bg-black/40 p-2 rounded-2xl border border-white/5">
@@ -1069,35 +1124,44 @@
                 `;
               }).join("")}
             </div>`;
-      } else {
-        let displayPhotos = allPhotos.map((p, i) => ({ ...p, origIdx: i }));
-        if (activeFilter === "all") {
-          displayPhotos = displayPhotos.filter(p => !hiddenSet.has(p.filename));
-        } else if (activeFilter === "selected") {
-          displayPhotos = displayPhotos.filter(p => selectedSet.has(p.filename));
-        } else if (activeFilter === "unselected") {
-          displayPhotos = displayPhotos.filter(p => !selectedSet.has(p.filename) && !hiddenSet.has(p.filename));
-        } else if (activeFilter === "starred") {
-          displayPhotos = displayPhotos.filter(p => starredSet.has(p.filename));
-        } else if (activeFilter === "notes") {
-          displayPhotos = displayPhotos.filter(p => commentsMap[p.filename] && commentsMap[p.filename].trim());
-        } else if (activeFilter === "hidden") {
-          displayPhotos = displayPhotos.filter(p => hiddenSet.has(p.filename));
-        }
+      }
 
-        contentHtml = displayPhotos.length === 0
-          ? `<p class="text-center py-20 text-zinc-500 text-sm">No photos in this section yet.</p>`
-          : `<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
-              ${displayPhotos.map(p => {
-                const isSel = selectedSet.has(p.filename);
-                const isStar = starredSet.has(p.filename);
-                const isHid = hiddenSet.has(p.filename);
-                const note = commentsMap[p.filename] || "";
-                const inFolders = getPhotoFolders(p.filename);
-                return `
-                  <div class="relative group bg-zinc-900 rounded-2xl overflow-hidden flex flex-col transition-all duration-200 ${isSel ? 'selected-ring' : 'border border-white/5 hover:border-white/20'} ${isHid ? 'opacity-65' : ''}">
-                    <div onclick="handleGridPhotoTap(${p.origIdx}, this)" class="relative overflow-hidden aspect-square cursor-pointer select-none">
-                      <img src="${p.url}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition duration-500 pointer-events-none" />
+      let displayPhotos = allPhotos.map((p, i) => ({ ...p, origIdx: i }));
+      if (activeFilter === "all") {
+        displayPhotos = displayPhotos.filter(p => !hiddenSet.has(p.filename));
+      } else if (activeFilter === "selected") {
+        displayPhotos = displayPhotos.filter(p => selectedSet.has(p.filename));
+      } else if (activeFilter === "unselected") {
+        displayPhotos = displayPhotos.filter(p => !selectedSet.has(p.filename) && !hiddenSet.has(p.filename));
+      } else if (activeFilter === "starred") {
+        displayPhotos = displayPhotos.filter(p => starredSet.has(p.filename));
+      } else if (activeFilter === "notes") {
+        displayPhotos = displayPhotos.filter(p => commentsMap[p.filename] && commentsMap[p.filename].trim());
+      } else if (activeFilter === "hidden") {
+        displayPhotos = displayPhotos.filter(p => hiddenSet.has(p.filename));
+      }
+
+      if (q) {
+        displayPhotos = displayPhotos.filter(p =>
+          p.filename.toLowerCase().includes(q) ||
+          (commentsMap[p.filename] || "").toLowerCase().includes(q)
+        );
+      }
+
+      return displayPhotos.length === 0
+        ? `<p class="text-center py-20 text-zinc-500 text-sm">${q ? `No photos found for "${escapeHtml(searchQuery)}".` : 'No photos in this section yet.'}</p>`
+        : `<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+            ${displayPhotos.map(p => {
+              const isSel = selectedSet.has(p.filename);
+              const isStar = starredSet.has(p.filename);
+              const isHid = hiddenSet.has(p.filename);
+              const note = commentsMap[p.filename] || "";
+              const inFolders = getPhotoFolders(p.filename);
+              return `
+                <div class="relative group bg-zinc-900 rounded-2xl overflow-hidden flex flex-col transition-all duration-200 ${isSel ? 'selected-ring' : 'border border-white/5 hover:border-white/20'} ${isHid ? 'opacity-65' : ''}">
+                  <div onclick="handleGridPhotoTap(${p.origIdx}, this)" class="relative overflow-hidden aspect-square cursor-pointer select-none">
+                    <img src="${p.url}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition duration-500 pointer-events-none" />
+                    ${!locked ? `
                       <!-- TOP LEFT: STAR (COVER/FRAME) + HIDE/REJECT -->
                       <div class="absolute top-2 left-2 flex gap-1.5">
                         <button onclick="toggleStar(${p.origIdx}, event)" title="Mark as Album Cover / Frame" class="w-7 h-7 rounded-full flex items-center justify-center text-xs shadow-xl backdrop-blur-md transition cursor-pointer ${isStar ? 'bg-yellow-400 text-black scale-105' : 'bg-black/55 text-white/80 hover:bg-yellow-400 hover:text-black'}">
@@ -1125,67 +1189,107 @@
                           📁
                         </button>
                       `}
-                    </div>
-                    <div class="px-3 py-2 text-[10px] text-zinc-400 bg-zinc-950/90 flex-1 flex flex-col justify-center">
-                      <div class="flex items-center justify-between">
-                        <span class="truncate">${p.filename}</span>
-                        <span class="flex items-center gap-1 ml-1 shrink-0">
-                          ${isStar ? '<span class="text-yellow-300 font-bold">★</span>' : ''}
-                          ${isSel ? '<span class="text-amber-400 font-semibold">✓</span>' : ''}
-                        </span>
-                      </div>
-                      ${inFolders.length ? `<p class="text-[10px] text-emerald-300 mt-0.5 truncate">📁 ${escapeHtml(inFolders.join(", "))}</p>` : ''}
-                      ${note ? `<p class="text-[10px] text-sky-300 mt-0.5 truncate" title="${escapeHtml(note)}">💬 ${escapeHtml(note)}</p>` : ''}
-                    </div>
+                    ` : `
+                      <!-- LOCKED VIEW BADGES ONLY -->
+                      ${isStar ? `<span class="absolute top-2 left-2 w-7 h-7 rounded-full bg-yellow-400 text-black flex items-center justify-center text-xs shadow-xl">★</span>` : ''}
+                      ${isSel ? `<span class="absolute top-2 right-2 w-7 h-7 rounded-full gold-gradient text-black flex items-center justify-center text-xs shadow-xl">♥</span>` : ''}
+                    `}
                   </div>
-                `;
-              }).join("")}
-            </div>`;
-      }
+                  <div class="px-3 py-2 text-[10px] text-zinc-400 bg-zinc-950/90 flex-1 flex flex-col justify-center">
+                    <div class="flex items-center justify-between">
+                      <span class="truncate">${p.filename}</span>
+                      <span class="flex items-center gap-1 ml-1 shrink-0">
+                        ${isStar ? '<span class="text-yellow-300 font-bold">★</span>' : ''}
+                        ${isSel ? '<span class="text-amber-400 font-semibold">✓</span>' : ''}
+                      </span>
+                    </div>
+                    ${inFolders.length ? `<p class="text-[10px] text-emerald-300 mt-0.5 truncate">📁 ${escapeHtml(inFolders.join(", "))}</p>` : ''}
+                    ${note ? `<p class="text-[10px] text-sky-300 mt-0.5 truncate" title="${escapeHtml(note)}">💬 ${escapeHtml(note)}</p>` : ''}
+                  </div>
+                </div>
+              `;
+            }).join("")}
+          </div>`;
+    }
+
+    function renderClientPhotos() {
+      updateClientHeader();
+      const allPhotos = currentGallery.photos || [];
+      const visiblePhotos = allPhotos.filter(p => !hiddenSet.has(p.filename));
+      const count = selectedSet.size;
+      const hidCount = hiddenSet.size;
+      const unselCount = visiblePhotos.filter(p => !selectedSet.has(p.filename)).length;
+      const starCount = starredSet.size;
+      const notesCount = allPhotos.filter(p => commentsMap[p.filename] && commentsMap[p.filename].trim()).length;
+      const folCount = foldersList.length;
+      const limit = currentGallery.maxLimit;
+      const pct = Math.min(100, Math.round((count / limit) * 100));
+      const locked = isGalleryLocked();
 
       document.getElementById("app").innerHTML = `
+        ${locked ? `
+          <div class="mb-5 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
+            <p class="text-xs text-emerald-300">
+              <span class="font-semibold">🔒 Selection Submitted & Locked.</span> Your final picks have been sent to ${STUDIO_NAME}. Contact studio if you need to unlock for changes.
+            </p>
+          </div>
+        ` : ''}
+
         <!-- GALLERY BANNER & FILTER -->
         <div class="mb-6 flex flex-col gap-4 pb-5 border-b border-white/10">
           <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div>
               <p class="text-[11px] uppercase tracking-[0.25em] text-amber-400 mb-1">${isAdminViewing ? 'Admin Gallery Inspector' : 'Photo Selection'}</p>
               <h2 class="font-serif-luxury text-2xl sm:text-3xl font-semibold text-white">${currentGallery.name}</h2>
-              <p class="text-[11px] text-zinc-400 mt-1">Double-tap photo to Select &bull; <span class="text-rose-400">✕</span> Hide Unwanted &bull; <span class="text-emerald-300">📁</span> Put in Folder</p>
+              <p class="text-[11px] text-zinc-400 mt-1">${locked ? 'View-only mode • Tap any photo to preview' : 'Double-tap photo to Select &bull; <span class="text-rose-400">✕</span> Hide Unwanted &bull; <span class="text-emerald-300">📁</span> Put in Folder'}</p>
               <div class="mt-3 w-full sm:w-64 h-1.5 bg-white/10 rounded-full overflow-hidden">
                 <div class="h-full gold-gradient transition-all duration-300" style="width: ${pct}%"></div>
               </div>
             </div>
-            <button onclick="openFolderModal()" class="bg-emerald-500/20 hover:bg-emerald-500/35 text-emerald-200 border border-emerald-500/40 text-xs font-semibold px-4 py-2.5 rounded-xl transition cursor-pointer w-fit">
-              📁 + Create Folder
-            </button>
+            ${!locked ? `
+              <button onclick="openFolderModal()" class="bg-emerald-500/20 hover:bg-emerald-500/35 text-emerald-200 border border-emerald-500/40 text-xs font-semibold px-4 py-2.5 rounded-xl transition cursor-pointer w-fit">
+                📁 + Create Folder
+              </button>
+            ` : ''}
           </div>
 
-          <div class="flex flex-wrap items-center gap-1.5 bg-white/5 p-1 rounded-xl border border-white/10 w-fit">
-            <button onclick="setFilter('all')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'all' ? 'bg-white text-black' : 'text-zinc-400 hover:text-white'}">
-              All (${visiblePhotos.length})
-            </button>
-            <button onclick="setFilter('selected')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'selected' ? 'gold-gradient text-black font-semibold' : 'text-zinc-400 hover:text-white'}">
-              ♥ Selected (${count})
-            </button>
-            <button onclick="setFilter('unselected')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'unselected' ? 'bg-zinc-200 text-black font-semibold' : 'text-zinc-400 hover:text-white'}">
-              Unselected (${unselCount})
-            </button>
-            <button onclick="setFilter('folders')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'folders' ? 'bg-emerald-400 text-black font-semibold' : 'text-zinc-400 hover:text-white'}">
-              📁 Folders (${folCount})
-            </button>
-            <button onclick="setFilter('starred')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'starred' ? 'bg-yellow-400 text-black font-semibold' : 'text-zinc-400 hover:text-white'}">
-              ★ Covers (${starCount})
-            </button>
-            <button onclick="setFilter('notes')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'notes' ? 'bg-sky-400 text-black font-semibold' : 'text-zinc-400 hover:text-white'}">
-              💬 Notes (${notesCount})
-            </button>
-            <button onclick="setFilter('hidden')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'hidden' ? 'bg-rose-500 text-white font-semibold' : 'text-zinc-400 hover:text-white'}">
-              ✕ Hidden (${hidCount})
-            </button>
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div class="flex flex-wrap items-center gap-1.5 bg-white/5 p-1 rounded-xl border border-white/10 w-fit">
+              <button onclick="setFilter('all')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'all' ? 'bg-white text-black' : 'text-zinc-400 hover:text-white'}">
+                All (${visiblePhotos.length})
+              </button>
+              <button onclick="setFilter('selected')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'selected' ? 'gold-gradient text-black font-semibold' : 'text-zinc-400 hover:text-white'}">
+                ♥ Selected (${count})
+              </button>
+              <button onclick="setFilter('unselected')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'unselected' ? 'bg-zinc-200 text-black font-semibold' : 'text-zinc-400 hover:text-white'}">
+                Unselected (${unselCount})
+              </button>
+              <button onclick="setFilter('folders')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'folders' ? 'bg-emerald-400 text-black font-semibold' : 'text-zinc-400 hover:text-white'}">
+                📁 Folders (${folCount})
+              </button>
+              <button onclick="setFilter('starred')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'starred' ? 'bg-yellow-400 text-black font-semibold' : 'text-zinc-400 hover:text-white'}">
+                ★ Covers (${starCount})
+              </button>
+              <button onclick="setFilter('notes')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'notes' ? 'bg-sky-400 text-black font-semibold' : 'text-zinc-400 hover:text-white'}">
+                💬 Notes (${notesCount})
+              </button>
+              <button onclick="setFilter('hidden')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${activeFilter === 'hidden' ? 'bg-rose-500 text-white font-semibold' : 'text-zinc-400 hover:text-white'}">
+                ✕ Hidden (${hidCount})
+              </button>
+            </div>
+
+            <!-- QUICK SEARCH BAR -->
+            <div class="relative w-full lg:w-64">
+              <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 text-xs pointer-events-none">🔍</span>
+              <input id="photoSearchInput" type="text" value="${escapeHtml(searchQuery)}" oninput="handlePhotoSearch(this.value)" placeholder="Search photo number (e.g. 4521)..." class="w-full bg-black/50 border border-white/15 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-zinc-500 outline-none focus:border-amber-400 transition" />
+              <button id="clearSearchBtn" onclick="clearPhotoSearch()" class="${searchQuery.trim() ? '' : 'hidden'} absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white text-xs cursor-pointer">✕</button>
+            </div>
           </div>
         </div>
 
-        ${contentHtml}
+        <div id="galleryContentWrap">
+          ${buildGalleryContentHtml()}
+        </div>
       `;
     }
 
@@ -1201,13 +1305,22 @@
             ← Back to Dashboard
           </button>
         `;
+      } else if (isGalleryLocked()) {
+        document.getElementById("headerActions").innerHTML = `
+          <div class="bg-white/5 border border-white/10 px-3 py-1.5 rounded-full text-xs font-medium">
+            <span class="text-amber-400 font-bold">${count}</span> <span class="text-zinc-400">/ ${limit}</span>
+          </div>
+          <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-semibold px-3.5 py-1.5 rounded-full flex items-center gap-1.5">
+            🔒 Locked
+          </span>
+        `;
       } else {
         document.getElementById("headerActions").innerHTML = `
           <div class="bg-white/5 border border-white/10 px-3 py-1.5 rounded-full text-xs font-medium">
             <span class="text-amber-400 font-bold">${count}</span> <span class="text-zinc-400">/ ${limit}</span>
           </div>
           <button onclick="submitSelection()" class="bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-bold px-4 py-1.5 rounded-full shadow-lg shadow-emerald-500/20 transition cursor-pointer flex items-center gap-1.5">
-            <span>✓</span> <span>${currentGallery.submitted ? 'Selected (Update)' : 'Selected'}</span>
+            <span>✓</span> <span>Selected</span>
           </button>
         `;
       }
@@ -1215,6 +1328,7 @@
 
     window.toggleSelect = async (idx, e) => {
       if (e) e.stopPropagation();
+      if (isGalleryLocked()) return;
       const filename = currentGallery.photos[idx].filename;
       if (selectedSet.has(filename)) {
         selectedSet.delete(filename);
@@ -1235,6 +1349,7 @@
 
     window.toggleStar = async (idx, e) => {
       if (e) e.stopPropagation();
+      if (isGalleryLocked()) return;
       const filename = currentGallery.photos[idx].filename;
       if (starredSet.has(filename)) {
         starredSet.delete(filename);
@@ -1249,6 +1364,7 @@
 
     window.toggleHide = async (idx, e) => {
       if (e) e.stopPropagation();
+      if (isGalleryLocked()) return;
       const filename = currentGallery.photos[idx].filename;
       if (hiddenSet.has(filename)) {
         hiddenSet.delete(filename);
@@ -1265,6 +1381,7 @@
 
     window.promptComment = async (idx, e) => {
       if (e) e.stopPropagation();
+      if (isGalleryLocked()) return;
       const filename = currentGallery.photos[idx].filename;
       const existing = commentsMap[filename] || "";
       const note = prompt(`Add a note / retouching comment for ${filename}:`, existing);
@@ -1314,11 +1431,12 @@
     };
 
     window.submitSelection = async () => {
+      if (isGalleryLocked()) return;
       if (selectedSet.size === 0 && foldersList.length === 0) {
         alert("Please select at least 1 photo before submitting.");
         return;
       }
-      if (!confirm(`Confirm selection of ${selectedSet.size} photos (${foldersList.length} Folders) and notify ${STUDIO_NAME} on WhatsApp?`)) return;
+      if (!confirm(`Final Submit: Lock ${selectedSet.size} selected photos (${foldersList.length} Folders) and notify ${STUDIO_NAME} on WhatsApp?`)) return;
 
       await updateDoc(doc(db, "galleries", currentGallery.id), {
         selected: Array.from(selectedSet),
@@ -1326,10 +1444,12 @@
         hidden: Array.from(hiddenSet),
         comments: commentsMap,
         folders: foldersList,
-        submitted: true
+        submitted: true,
+        locked: true
       });
       currentGallery.submitted = true;
-      updateClientHeader();
+      currentGallery.locked = true;
+      renderClientPhotos();
 
       const folderLines = foldersList.length > 0
         ? "\n" + foldersList.map(f => `  • ${f.name}: ${(f.photos || []).length} photos`).join("\n")
@@ -1338,7 +1458,7 @@
       const notesCount = Object.values(commentsMap).filter(c => c && c.trim()).length;
       const waMsg =
         `Hi ${STUDIO_NAME}! ✅\n` +
-        `I have completed my photo selection.\n\n` +
+        `I have completed & locked my photo selection.\n\n` +
         `📸 *Gallery:* ${currentGallery.name}\n` +
         `♥ *Selected Photos:* ${selectedSet.size} / ${currentGallery.maxLimit}\n` +
         `📁 *Folders (${foldersList.length}):*${folderLines}\n` +
@@ -1349,7 +1469,7 @@
       const waUrl = `https://wa.me/${STUDIO_WHATSAPP_NUMBER}?text=${encodeURIComponent(waMsg)}`;
 
       document.getElementById("submitSummaryText").innerText =
-        `You selected ${selectedSet.size} photos across ${foldersList.length} custom folder(s). Tap the green button below to alert ${STUDIO_NAME} on WhatsApp.`;
+        `Your selection (${selectedSet.size} photos, ${foldersList.length} folder(s)) is now locked. Tap below to alert ${STUDIO_NAME} on WhatsApp.`;
       document.getElementById("whatsappAlertLink").href = waUrl;
       document.getElementById("submitSuccessModal").classList.remove("hidden");
       document.getElementById("submitSuccessModal").classList.add("flex");
@@ -1385,16 +1505,19 @@
     };
 
     window.toggleCurrentLightboxSelect = async () => {
+      if (isGalleryLocked()) return;
       await window.toggleSelect(lightboxIndex);
       updateLightboxUI();
     };
 
     window.toggleCurrentLightboxStar = async () => {
+      if (isGalleryLocked()) return;
       await window.toggleStar(lightboxIndex);
       updateLightboxUI();
     };
 
     window.toggleCurrentLightboxHide = async () => {
+      if (isGalleryLocked()) return;
       const wasHidden = hiddenSet.has(currentGallery.photos[lightboxIndex].filename);
       await window.toggleHide(lightboxIndex);
       if (!wasHidden) {
@@ -1405,6 +1528,7 @@
     };
 
     window.saveLightboxComment = async () => {
+      if (isGalleryLocked()) return;
       const p = currentGallery.photos[lightboxIndex];
       const val = document.getElementById("lightboxCommentInput").value.trim();
       if (val) {
@@ -1461,39 +1585,62 @@
 
     function updateLightboxUI() {
       const p = currentGallery.photos[lightboxIndex];
+      const locked = isGalleryLocked();
       document.getElementById("lightboxImg").src = p.url;
       document.getElementById("lightboxFilename").innerText = `${p.filename}  •  ${lightboxIndex + 1} / ${currentGallery.photos.length}`;
-      document.getElementById("lightboxCommentInput").value = commentsMap[p.filename] || "";
+
+      const commentInput = document.getElementById("lightboxCommentInput");
+      const saveNoteBtn = document.getElementById("lightboxSaveNoteBtn");
+      commentInput.value = commentsMap[p.filename] || "";
+      commentInput.disabled = locked;
+      if (locked) {
+        commentInput.placeholder = commentsMap[p.filename] ? "" : "Gallery locked (view-only)";
+        saveNoteBtn.classList.add("hidden");
+      } else {
+        commentInput.placeholder = "Add a note (e.g. Retouch background, B&W)...";
+        saveNoteBtn.classList.remove("hidden");
+      }
 
       const delBtn = document.getElementById("lightboxDeleteBtn");
       if (isAdminViewing) delBtn.classList.remove("hidden");
       else delBtn.classList.add("hidden");
 
       const selBtn = document.getElementById("lightboxSelectBtn");
-      if (selectedSet.has(p.filename)) {
-        selBtn.innerText = "♥ Selected";
-        selBtn.className = "px-5 py-2 rounded-full font-semibold text-xs uppercase tracking-wider gold-gradient text-black transition cursor-pointer";
-      } else {
-        selBtn.innerText = "♥ Select";
-        selBtn.className = "px-5 py-2 rounded-full font-semibold text-xs uppercase tracking-wider bg-white/10 hover:bg-amber-400 hover:text-black text-white transition cursor-pointer";
-      }
-
       const starBtn = document.getElementById("lightboxStarBtn");
-      if (starredSet.has(p.filename)) {
-        starBtn.innerText = "★ Cover / Frame";
-        starBtn.className = "px-5 py-2 rounded-full font-semibold text-xs uppercase tracking-wider bg-yellow-400 text-black transition cursor-pointer";
-      } else {
-        starBtn.innerText = "★ Cover / Frame";
-        starBtn.className = "px-5 py-2 rounded-full font-semibold text-xs uppercase tracking-wider bg-white/10 hover:bg-yellow-400 hover:text-black text-white transition cursor-pointer";
-      }
-
       const hideBtn = document.getElementById("lightboxHideBtn");
-      if (hiddenSet.has(p.filename)) {
-        hideBtn.innerText = "↩ Unhide";
-        hideBtn.className = "px-4 py-2 rounded-full font-semibold text-xs uppercase tracking-wider bg-rose-500 text-white transition cursor-pointer";
+
+      if (locked) {
+        selBtn.classList.add("hidden");
+        starBtn.classList.add("hidden");
+        hideBtn.classList.add("hidden");
       } else {
-        hideBtn.innerText = "✕ Hide";
-        hideBtn.className = "px-4 py-2 rounded-full font-semibold text-xs uppercase tracking-wider bg-white/10 hover:bg-rose-500 hover:text-white text-zinc-200 transition cursor-pointer";
+        selBtn.classList.remove("hidden");
+        starBtn.classList.remove("hidden");
+        hideBtn.classList.remove("hidden");
+
+        if (selectedSet.has(p.filename)) {
+          selBtn.innerText = "♥ Selected";
+          selBtn.className = "px-5 py-2 rounded-full font-semibold text-xs uppercase tracking-wider gold-gradient text-black transition cursor-pointer";
+        } else {
+          selBtn.innerText = "♥ Select";
+          selBtn.className = "px-5 py-2 rounded-full font-semibold text-xs uppercase tracking-wider bg-white/10 hover:bg-amber-400 hover:text-black text-white transition cursor-pointer";
+        }
+
+        if (starredSet.has(p.filename)) {
+          starBtn.innerText = "★ Cover / Frame";
+          starBtn.className = "px-5 py-2 rounded-full font-semibold text-xs uppercase tracking-wider bg-yellow-400 text-black transition cursor-pointer";
+        } else {
+          starBtn.innerText = "★ Cover / Frame";
+          starBtn.className = "px-5 py-2 rounded-full font-semibold text-xs uppercase tracking-wider bg-white/10 hover:bg-yellow-400 hover:text-black text-white transition cursor-pointer";
+        }
+
+        if (hiddenSet.has(p.filename)) {
+          hideBtn.innerText = "↩ Unhide";
+          hideBtn.className = "px-4 py-2 rounded-full font-semibold text-xs uppercase tracking-wider bg-rose-500 text-white transition cursor-pointer";
+        } else {
+          hideBtn.innerText = "✕ Hide";
+          hideBtn.className = "px-4 py-2 rounded-full font-semibold text-xs uppercase tracking-wider bg-white/10 hover:bg-rose-500 hover:text-white text-zinc-200 transition cursor-pointer";
+        }
       }
     }
   </script>
