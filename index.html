@@ -11,6 +11,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Montserrat:wght@500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   <style>
+    html, body {
+      overscroll-behavior-y: none;
+    }
     body {
       background-color: #09090b;
       color: #f4f4f5;
@@ -979,7 +982,11 @@
       foldersList = currentGallery.folders || [];
       document.getElementById("subTitle").innerText = currentGallery.name;
 
-      renderPinScreen();
+      if (sessionStorage.getItem("unlocked_" + id) === "true") {
+        renderClientPhotos();
+      } else {
+        renderPinScreen();
+      }
     }
 
     function renderPinScreen() {
@@ -995,6 +1002,7 @@
       `;
       const unlock = () => {
         if (document.getElementById("pinInput").value.trim() === currentGallery.pin) {
+          sessionStorage.setItem("unlocked_" + currentGallery.id, "true");
           renderClientPhotos();
         } else {
           alert("Incorrect PIN!");
