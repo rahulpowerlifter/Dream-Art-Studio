@@ -81,7 +81,8 @@
     body.theme-ivory main .text-zinc-400 {
       color: #52525b !important;
     }
-    body.theme-ivory main input {
+    body.theme-ivory main input,
+    body.theme-ivory main textarea {
       color: #18181b !important;
     }
     body.theme-ivory .cover-banner-card h2,
@@ -218,6 +219,89 @@
 
   <!-- MAIN CONTAINER -->
   <main id="app" class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6"></main>
+
+  <!-- ADMIN EDIT GALLERY MODAL (NAME, PIN, MAX LIMIT / QUANTITY) -->
+  <div id="editGalleryModal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="bg-zinc-950 border border-white/15 rounded-3xl max-w-md w-full p-6 shadow-2xl">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="font-serif-luxury text-base font-semibold text-white">✏️ Edit Gallery</h3>
+          <p class="text-[11px] text-zinc-400">Update event name, PIN, or photo selection limit</p>
+        </div>
+        <button onclick="closeEditGalleryModal()" class="text-zinc-400 hover:text-white bg-white/10 hover:bg-white/20 px-3 py-1 rounded-full text-xs cursor-pointer">✕</button>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="text-[11px] uppercase tracking-wider text-zinc-400">Client / Event Name</label>
+          <input id="editGalleryName" type="text" class="w-full mt-1.5 bg-black/50 border border-white/15 rounded-xl px-3.5 py-2.5 text-sm text-white outline-none focus:border-amber-400 transition" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-[11px] uppercase tracking-wider text-zinc-400">4-Digit PIN</label>
+            <input id="editGalleryPin" type="text" class="w-full mt-1.5 bg-black/50 border border-white/15 rounded-xl px-3.5 py-2.5 text-sm text-white outline-none focus:border-amber-400 transition" />
+          </div>
+          <div>
+            <label class="text-[11px] uppercase tracking-wider text-zinc-400">Photo Limit (Qty)</label>
+            <input id="editGalleryLimit" type="number" min="1" class="w-full mt-1.5 bg-black/50 border border-white/15 rounded-xl px-3.5 py-2.5 text-sm text-white outline-none focus:border-amber-400 transition" />
+          </div>
+        </div>
+        <button onclick="saveEditedGallery()" class="w-full gold-gradient text-black font-semibold py-2.5 rounded-xl text-sm hover:opacity-90 transition cursor-pointer">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CLIENT SETTINGS & HELP SUPPORT MODAL -->
+  <div id="clientSettingsModal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-zinc-950 border border-white/15 rounded-3xl max-w-lg w-full p-6 shadow-2xl my-auto">
+      <div class="flex items-center justify-between pb-3.5 border-b border-white/10 mb-4">
+        <div>
+          <h3 class="font-serif-luxury text-base font-semibold text-white">⚙️ Settings & Help</h3>
+          <p class="text-[11px] text-zinc-400">Gallery preferences & direct support with ${STUDIO_NAME}</p>
+        </div>
+        <button onclick="closeClientSettings()" class="text-zinc-400 hover:text-white bg-white/10 hover:bg-white/20 px-3 py-1 rounded-full text-xs cursor-pointer">✕ Close</button>
+      </div>
+
+      <!-- Theme Preference inside Settings -->
+      <div class="flex items-center justify-between bg-white/5 border border-white/10 rounded-2xl px-4 py-3 mb-5">
+        <div>
+          <p class="text-xs font-semibold text-white">Appearance Theme</p>
+          <p class="text-[10px] text-zinc-400">Switch between Dark Luxury and Royal Ivory</p>
+        </div>
+        <button onclick="toggleStudioTheme()" class="gold-gradient text-black font-semibold text-xs px-3.5 py-1.5 rounded-full cursor-pointer">Switch Theme</button>
+      </div>
+
+      <!-- HELP & SUPPORT SECTION -->
+      <div>
+        <h4 class="text-xs font-semibold uppercase tracking-wider text-amber-400 mb-1">🆘 Help & Support</h4>
+        <p class="text-[11px] text-zinc-400 mb-3">Have a question about photo limit, folders, or album selection? Send a message directly to ${STUDIO_NAME}.</p>
+
+        <div class="flex gap-2 mb-4">
+          <input id="clientHelpInput" type="text" placeholder="Type your help question or comment..." class="flex-1 bg-black/60 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-500 outline-none focus:border-amber-400 transition" />
+          <button onclick="sendClientHelpMessage()" class="gold-gradient text-black font-semibold text-xs px-4 py-2.5 rounded-xl hover:opacity-90 transition cursor-pointer shrink-0">Send</button>
+        </div>
+
+        <div id="clientHelpThread" class="space-y-2.5 max-h-60 overflow-y-auto pr-1 text-xs">
+          <p class="text-zinc-500 text-center py-4">No help messages yet.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN HELP INBOX MODAL -->
+  <div id="adminHelpModal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-zinc-950 border border-white/15 rounded-3xl max-w-2xl w-full p-6 shadow-2xl my-auto max-h-[88vh] flex flex-col">
+      <div class="flex items-center justify-between pb-3.5 border-b border-white/10 mb-4">
+        <div>
+          <h3 class="font-serif-luxury text-base font-semibold text-white">🆘 Client Help Inbox</h3>
+          <p class="text-[11px] text-zinc-400">View client help requests and send instant replies</p>
+        </div>
+        <button onclick="closeAdminHelpInbox()" class="text-zinc-400 hover:text-white bg-white/10 hover:bg-white/20 px-3 py-1 rounded-full text-xs cursor-pointer">✕ Close</button>
+      </div>
+      <div id="adminHelpList" class="space-y-3 overflow-y-auto pr-1 flex-1 text-xs">
+        <p class="text-zinc-500 text-center py-8">Loading messages...</p>
+      </div>
+    </div>
+  </div>
 
   <!-- SPEED SELECTION (TINDER-STYLE) MODAL -->
   <div id="speedModal" class="fixed inset-0 z-50 bg-black/95 backdrop-blur-lg hidden flex-col items-center justify-between p-4 sm:p-6 overflow-hidden touch-none">
@@ -490,10 +574,12 @@
     let starredSet = new Set();
     let commentsMap = {};
     let foldersList = [];
+    let helpMessagesList = [];
     let lightboxIndex = 0;
     let activeFilter = "all"; // "all", "selected", "folders", "starred", "notes"
     let searchQuery = "";
     let addMoreTargetId = null;
+    let editingGalleryId = null;
     let isAdminViewing = false;
     let showCoverBanner = true;
 
@@ -533,6 +619,223 @@
 
     // --- UNIQUE SLEEK SVG DELETE ICON ---
     const UNIQUE_DELETE_SVG = `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>`;
+
+    // =========================================================
+    // ADMIN EDIT GALLERY MODAL (NAME, PIN, MAX LIMIT / QUANTITY)
+    // =========================================================
+    window.openEditGalleryModal = async (id) => {
+      const snap = await getDoc(doc(db, "galleries", id));
+      if (!snap.exists()) return;
+      const g = snap.data();
+      editingGalleryId = id;
+      document.getElementById("editGalleryName").value = g.name || "";
+      document.getElementById("editGalleryPin").value = g.pin || "";
+      document.getElementById("editGalleryLimit").value = g.maxLimit || 150;
+      document.getElementById("editGalleryModal").classList.remove("hidden");
+      document.getElementById("editGalleryModal").classList.add("flex");
+    };
+
+    window.closeEditGalleryModal = () => {
+      editingGalleryId = null;
+      document.getElementById("editGalleryModal").classList.add("hidden");
+      document.getElementById("editGalleryModal").classList.remove("flex");
+    };
+
+    window.saveEditedGallery = async () => {
+      if (!editingGalleryId) return;
+      const newName = document.getElementById("editGalleryName").value.trim();
+      const newPin = document.getElementById("editGalleryPin").value.trim();
+      const newLimit = parseInt(document.getElementById("editGalleryLimit").value, 10);
+
+      if (!newName || !newPin || isNaN(newLimit) || newLimit < 1) {
+        alert("Please enter valid Name, PIN, and Photo Limit.");
+        return;
+      }
+
+      await updateDoc(doc(db, "galleries", editingGalleryId), {
+        name: newName,
+        pin: newPin,
+        maxLimit: newLimit
+      });
+
+      window.closeEditGalleryModal();
+      loadAdminGalleries();
+      alert("Gallery details updated!");
+    };
+
+    // =========================================================
+    // CLIENT SETTINGS & HELP SUPPORT + ADMIN HELP INBOX
+    // =========================================================
+    function formatMsgTime(ts) {
+      if (!ts) return "";
+      try {
+        return new Date(ts).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+      } catch (e) {
+        return "";
+      }
+    }
+
+    window.openClientSettings = () => {
+      helpMessagesList = currentGallery.helpMessages || [];
+      renderClientHelpThread();
+      document.getElementById("clientSettingsModal").classList.remove("hidden");
+      document.getElementById("clientSettingsModal").classList.add("flex");
+    };
+
+    window.closeClientSettings = () => {
+      document.getElementById("clientSettingsModal").classList.add("hidden");
+      document.getElementById("clientSettingsModal").classList.remove("flex");
+    };
+
+    function renderClientHelpThread() {
+      const box = document.getElementById("clientHelpThread");
+      if (!box) return;
+      if (!helpMessagesList || helpMessagesList.length === 0) {
+        box.innerHTML = `<p class="text-zinc-500 text-center py-4">No help messages yet. Ask anything below!</p>`;
+        return;
+      }
+
+      box.innerHTML = helpMessagesList.map(m => `
+        <div class="bg-white/5 border border-white/10 rounded-2xl p-3 space-y-2">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-[10px] uppercase tracking-wider text-amber-400 font-semibold">You</span>
+            <span class="text-[10px] text-zinc-500">${escapeHtml(formatMsgTime(m.createdAt))}</span>
+          </div>
+          <p class="text-xs text-white">${escapeHtml(m.question)}</p>
+          ${m.reply
+            ? `<div class="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-2.5 mt-1">
+                 <div class="flex items-center justify-between gap-2 mb-0.5">
+                   <span class="text-[10px] font-semibold text-emerald-400">📸 ${escapeHtml(STUDIO_NAME)}</span>
+                   <span class="text-[10px] text-zinc-500">${escapeHtml(formatMsgTime(m.repliedAt))}</span>
+                 </div>
+                 <p class="text-xs text-emerald-100">${escapeHtml(m.reply)}</p>
+               </div>`
+            : `<p class="text-[10px] text-zinc-500 italic">Waiting for reply from ${escapeHtml(STUDIO_NAME)}...</p>`
+          }
+        </div>
+      `).join("");
+    }
+
+    window.sendClientHelpMessage = async () => {
+      if (!currentGallery) return;
+      const input = document.getElementById("clientHelpInput");
+      const text = input.value.trim();
+      if (!text) return;
+
+      const snap = await getDoc(doc(db, "galleries", currentGallery.id));
+      const latestList = snap.exists() ? (snap.data().helpMessages || []) : (currentGallery.helpMessages || []);
+
+      const newMsg = {
+        id: "help_" + Date.now(),
+        question: text,
+        createdAt: Date.now(),
+        reply: "",
+        repliedAt: null,
+        readByAdmin: false
+      };
+
+      latestList.push(newMsg);
+      helpMessagesList = latestList;
+      currentGallery.helpMessages = latestList;
+
+      await updateDoc(doc(db, "galleries", currentGallery.id), {
+        helpMessages: latestList
+      });
+
+      input.value = "";
+      renderClientHelpThread();
+    };
+
+    window.openAdminHelpInbox = async () => {
+      document.getElementById("adminHelpModal").classList.remove("hidden");
+      document.getElementById("adminHelpModal").classList.add("flex");
+      await loadAdminHelpInbox();
+    };
+
+    window.closeAdminHelpInbox = () => {
+      document.getElementById("adminHelpModal").classList.add("hidden");
+      document.getElementById("adminHelpModal").classList.remove("flex");
+      loadAdminGalleries();
+    };
+
+    async function loadAdminHelpInbox() {
+      const container = document.getElementById("adminHelpList");
+      container.innerHTML = `<p class="text-zinc-500 text-center py-8">Loading messages...</p>`;
+
+      const snap = await getDocs(collection(db, "galleries"));
+      const entries = [];
+      snap.forEach(d => {
+        const g = d.data();
+        const msgs = g.helpMessages || [];
+        msgs.forEach(m => {
+          entries.push({
+            galleryId: d.id,
+            galleryName: g.name,
+            msg: m
+          });
+        });
+      });
+
+      entries.sort((a, b) => (b.msg.createdAt || 0) - (a.msg.createdAt || 0));
+
+      if (entries.length === 0) {
+        container.innerHTML = `<p class="text-zinc-500 text-center py-10">No client help questions yet.</p>`;
+        return;
+      }
+
+      container.innerHTML = entries.map(item => {
+        const inputId = `replyInput_${item.galleryId}_${item.msg.id}`;
+        return `
+          <div class="bg-black/50 border border-white/10 rounded-2xl p-4 space-y-2.5">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-xs font-semibold text-amber-400">📸 ${escapeHtml(item.galleryName)}</span>
+              <span class="text-[10px] text-zinc-500">${escapeHtml(formatMsgTime(item.msg.createdAt))}</span>
+            </div>
+            <p class="text-xs text-white bg-white/5 px-3 py-2 rounded-xl border border-white/5">${escapeHtml(item.msg.question)}</p>
+            ${item.msg.reply
+              ? `<div class="bg-emerald-500/10 border border-emerald-500/25 px-3 py-2 rounded-xl">
+                   <span class="text-[10px] text-emerald-400 font-semibold block mb-0.5">Your Reply:</span>
+                   <p class="text-xs text-emerald-100">${escapeHtml(item.msg.reply)}</p>
+                 </div>`
+              : ''
+            }
+            <div class="flex gap-2 pt-1">
+              <input id="${inputId}" type="text" value="${escapeHtml(item.msg.reply || '')}" placeholder="Write your reply to client..." class="flex-1 bg-black/70 border border-white/15 rounded-xl px-3 py-2 text-xs text-white placeholder-zinc-500 outline-none focus:border-emerald-400 transition" />
+              <button onclick="sendAdminHelpReply('${item.galleryId}', '${item.msg.id}', '${inputId}')" class="bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs px-4 py-2 rounded-xl transition cursor-pointer shrink-0">Reply</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    window.sendAdminHelpReply = async (gId, msgId, inputId) => {
+      const replyText = document.getElementById(inputId).value.trim();
+      if (!replyText) {
+        alert("Please type a reply first.");
+        return;
+      }
+
+      const docRef = doc(db, "galleries", gId);
+      const snap = await getDoc(docRef);
+      if (!snap.exists()) return;
+
+      const msgs = snap.data().helpMessages || [];
+      const updated = msgs.map(m => {
+        if (m.id === msgId) {
+          return { ...m, reply: replyText, repliedAt: Date.now(), readByAdmin: true };
+        }
+        return m;
+      });
+
+      await updateDoc(docRef, { helpMessages: updated });
+      if (currentGallery && currentGallery.id === gId) {
+        currentGallery.helpMessages = updated;
+        helpMessagesList = updated;
+      }
+
+      alert("Reply sent to client!");
+      await loadAdminHelpInbox();
+    };
 
     // =========================================================
     // 1-TAP WHATSAPP CLIENT INVITE (ADMIN SIDE)
@@ -1587,7 +1890,11 @@
     async function renderAdminDashboard() {
       isAdminViewing = false;
       document.getElementById("subTitle").innerText = "Studio Dashboard";
-      document.getElementById("headerActions").innerHTML = "";
+      document.getElementById("headerActions").innerHTML = `
+        <button onclick="openAdminHelpInbox()" class="bg-amber-500/20 hover:bg-amber-500/35 text-amber-300 border border-amber-500/40 text-xs font-semibold px-3.5 py-1.5 rounded-full transition cursor-pointer">
+          🆘 Help Inbox <span id="helpBadgeCount" class="ml-1 bg-amber-400 text-black px-1.5 py-0.2 rounded-full text-[10px] font-bold">0</span>
+        </button>
+      `;
       document.getElementById("app").innerHTML = `
         <div class="grid lg:grid-cols-3 gap-6">
           <div class="glass-card p-6 rounded-3xl h-fit">
@@ -1701,6 +2008,7 @@
         starred: [],
         comments: {},
         folders: [],
+        helpMessages: [],
         submitted: false,
         locked: false,
         createdAt: Date.now()
@@ -1728,6 +2036,7 @@
       starredSet = new Set(currentGallery.starred || []);
       commentsMap = currentGallery.comments || {};
       foldersList = currentGallery.folders || [];
+      helpMessagesList = currentGallery.helpMessages || [];
       activeFilter = "all";
       searchQuery = "";
       isAdminViewing = true;
@@ -1811,11 +2120,25 @@
       const snap = await getDocs(collection(db, "galleries"));
       if (snap.empty) {
         listEl.innerHTML = `<p class="text-zinc-500 py-8 text-center">No client galleries yet. Create your first one!</p>`;
+        const badgeEl = document.getElementById("helpBadgeCount");
+        if (badgeEl) badgeEl.innerText = "0";
         return;
       }
 
       const items = [];
-      snap.forEach(d => items.push({ id: d.id, ...d.data() }));
+      let unansweredHelpCount = 0;
+      snap.forEach(d => {
+        const data = d.data();
+        const msgs = data.helpMessages || [];
+        msgs.forEach(m => {
+          if (!m.reply || !m.reply.trim()) unansweredHelpCount++;
+        });
+        items.push({ id: d.id, ...data });
+      });
+
+      const badgeEl = document.getElementById("helpBadgeCount");
+      if (badgeEl) badgeEl.innerText = String(unansweredHelpCount);
+
       items.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
       listEl.innerHTML = items.map(g => {
@@ -1850,6 +2173,7 @@
               </div>
               <div class="flex flex-wrap gap-2">
                 <button onclick="openAdminGalleryView('${g.id}')" class="bg-blue-500/15 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 text-xs px-3 py-2 rounded-xl transition cursor-pointer">View</button>
+                <button onclick="openEditGalleryModal('${g.id}')" class="bg-amber-500/15 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-xs px-3 py-2 rounded-xl transition cursor-pointer">✏️ Edit</button>
                 <button onclick="toggleAdminGalleryLock('${g.id}', ${isLocked})" class="${isLocked ? 'bg-amber-500/20 hover:bg-amber-500/35 text-amber-400 border border-amber-500/30' : 'bg-zinc-700/40 hover:bg-zinc-700 text-zinc-300 border border-white/10'} text-xs px-3 py-2 rounded-xl transition cursor-pointer">${isLocked ? '🔓 Unlock' : '🔒 Lock'}</button>
                 <button onclick="triggerAddPhotos('${g.id}')" class="bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 text-xs px-3 py-2 rounded-xl transition cursor-pointer">+ Add Photos</button>
                 <button onclick="shareGalleryWhatsApp('${safeNameAttr}', '${shareUrl}', '${safePinAttr}')" class="bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs px-3 py-2 rounded-xl transition cursor-pointer">📲 WhatsApp</button>
@@ -1919,6 +2243,7 @@
       starredSet = new Set(currentGallery.starred || []);
       commentsMap = currentGallery.comments || {};
       foldersList = currentGallery.folders || [];
+      helpMessagesList = currentGallery.helpMessages || [];
       searchQuery = "";
       document.getElementById("subTitle").innerText = currentGallery.name;
 
@@ -2194,11 +2519,19 @@
     function updateClientHeader() {
       const count = selectedSet.size;
       const limit = currentGallery.maxLimit;
+      const hasNewReply = (currentGallery.helpMessages || []).some(m => m.reply && m.reply.trim());
+      const settingsBtn = `
+        <button onclick="openClientSettings()" title="Settings & Help" class="relative bg-white/10 hover:bg-white/20 border border-white/15 px-3 py-1.5 rounded-full text-xs font-medium transition cursor-pointer">
+          ⚙️ Help${hasNewReply ? '<span class="ml-1 inline-block w-2 h-2 rounded-full bg-emerald-400"></span>' : ''}
+        </button>
+      `;
+
       if (isAdminViewing) {
         document.getElementById("headerActions").innerHTML = `
           <div class="bg-white/5 border border-white/10 px-3 py-1.5 rounded-full text-xs font-medium">
             <span class="text-amber-500 font-bold">${count}</span> <span class="text-zinc-400">/ ${limit}</span>
           </div>
+          ${settingsBtn}
           <button onclick="backToAdminDashboard()" class="bg-white/10 hover:bg-white/20 border border-white/15 text-xs font-medium px-3.5 py-1.5 rounded-full transition cursor-pointer">
             ← Dashboard
           </button>
@@ -2208,6 +2541,7 @@
           <div class="bg-white/5 border border-white/10 px-3 py-1.5 rounded-full text-xs font-medium">
             <span class="text-amber-500 font-bold">${count}</span> <span class="text-zinc-400">/ ${limit}</span>
           </div>
+          ${settingsBtn}
           <span class="bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1">
             🔒 Locked
           </span>
@@ -2217,6 +2551,7 @@
           <div class="bg-white/5 border border-white/10 px-3 py-1.5 rounded-full text-xs font-medium">
             <span class="text-amber-500 font-bold">${count}</span> <span class="text-zinc-400">/ ${limit}</span>
           </div>
+          ${settingsBtn}
           <button onclick="submitSelection()" class="bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-bold px-3.5 py-1.5 rounded-full shadow-lg shadow-emerald-500/20 transition cursor-pointer flex items-center gap-1">
             <span>✓</span> <span>Selected</span>
           </button>
