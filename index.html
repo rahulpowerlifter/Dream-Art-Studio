@@ -261,7 +261,6 @@
         <button onclick="closeClientSettings()" class="text-zinc-400 hover:text-white bg-white/10 hover:bg-white/20 px-3 py-1 rounded-full text-xs cursor-pointer">✕ Close</button>
       </div>
 
-      <!-- Theme Preference inside Settings -->
       <div class="flex items-center justify-between bg-white/5 border border-white/10 rounded-2xl px-4 py-3 mb-5">
         <div>
           <p class="text-xs font-semibold text-white">Appearance Theme</p>
@@ -270,7 +269,6 @@
         <button onclick="toggleStudioTheme()" class="gold-gradient text-black font-semibold text-xs px-3.5 py-1.5 rounded-full cursor-pointer">Switch Theme</button>
       </div>
 
-      <!-- HELP & SUPPORT SECTION -->
       <div>
         <h4 class="text-xs font-semibold uppercase tracking-wider text-amber-400 mb-1">🆘 Help & Support</h4>
         <p class="text-[11px] text-zinc-400 mb-3">Have a question about photo limit, folders, or album selection? Send a message directly to ${STUDIO_NAME}.</p>
@@ -366,7 +364,7 @@
 
   <!-- LIGHTBOX MODAL -->
   <div id="lightbox" class="fixed inset-0 z-50 bg-black/95 backdrop-blur-md hidden flex-col items-center justify-center p-4 overflow-hidden touch-none">
-    <button onclick="closeLightbox()" class="absolute top-4 right-4 z-20 text-zinc-300 hover:text-white bg-white/10 hover:bg-white/20 px-3.5 py-1.5 rounded-full text-xs tracking-wider uppercase transition cursor-pointer">✕ Close</button>
+    <button onclick="closeLightbox()" class="fixed top-4 right-4 z-50 text-white bg-zinc-900/95 hover:bg-zinc-800 border border-white/25 shadow-xl px-4 py-2 rounded-full text-xs font-semibold tracking-wider uppercase transition cursor-pointer">✕ Close</button>
     <div id="lightboxImgWrap" onclick="handleLightboxTap()" class="relative flex items-center justify-center cursor-pointer select-none overflow-hidden rounded-lg max-h-[60vh] max-w-[94vw]">
       <img id="lightboxImg" src="" draggable="false" class="max-h-[60vh] max-w-[94vw] object-contain rounded-lg shadow-2xl select-none" />
     </div>
@@ -583,6 +581,10 @@
     let isAdminViewing = false;
     let showCoverBanner = true;
 
+    // Back-gesture / overlay stack management
+    let activeOverlayKind = null; // "lightbox" | "speed" | "frame" | "folder" | "settings" | "editGallery" | "adminHelp"
+    let ignoreNextPopstate = false;
+
     // Frame Preview state
     let activeFrameStyle = "black";
     let activeWallStyle = "cream";
@@ -621,6 +623,64 @@
     const UNIQUE_DELETE_SVG = `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>`;
 
     // =========================================================
+    // PHONE BACK BUTTON / GESTURE INTERCEPT FOR OVERLAYS
+    // =========================================================
+    function pushOverlayHistory(kind) {
+      activeOverlayKind = kind;
+      try {
+        history.pushState({ studioOverlay: kind }, "", window.location.href);
+      } catch (e) {}
+    }
+
+    function cleanupOverlayHistory(kind) {
+      if (activeOverlayKind === kind) {
+        activeOverlayKind = null;
+        if (history.state && history.state.studioOverlay === kind) {
+          ignoreNextPopstate = true;
+          history.back();
+        }
+      }
+    }
+
+    window.addEventListener("popstate", () => {
+      if (ignoreNextPopstate) {
+        ignoreNextPopstate = false;
+        return;
+      }
+      if (!activeOverlayKind) return;
+      const kind = activeOverlayKind;
+      activeOverlayKind = null;
+
+      if (kind === "lightbox") {
+        resetLightboxZoom();
+        document.getElementById("lightbox").classList.add("hidden");
+        document.getElementById("lightbox").classList.remove("flex");
+        renderClientPhotos();
+      } else if (kind === "speed") {
+        document.getElementById("speedModal").classList.add("hidden");
+        document.getElementById("speedModal").classList.remove("flex");
+        renderClientPhotos();
+      } else if (kind === "frame") {
+        document.getElementById("framePreviewModal").classList.add("hidden");
+        document.getElementById("framePreviewModal").classList.remove("flex");
+      } else if (kind === "folder") {
+        document.getElementById("folderModal").classList.add("hidden");
+        document.getElementById("folderModal").classList.remove("flex");
+      } else if (kind === "settings") {
+        document.getElementById("clientSettingsModal").classList.add("hidden");
+        document.getElementById("clientSettingsModal").classList.remove("flex");
+      } else if (kind === "editGallery") {
+        editingGalleryId = null;
+        document.getElementById("editGalleryModal").classList.add("hidden");
+        document.getElementById("editGalleryModal").classList.remove("flex");
+      } else if (kind === "adminHelp") {
+        document.getElementById("adminHelpModal").classList.add("hidden");
+        document.getElementById("adminHelpModal").classList.remove("flex");
+        loadAdminGalleries();
+      }
+    });
+
+    // =========================================================
     // ADMIN EDIT GALLERY MODAL (NAME, PIN, MAX LIMIT / QUANTITY)
     // =========================================================
     window.openEditGalleryModal = async (id) => {
@@ -633,12 +693,14 @@
       document.getElementById("editGalleryLimit").value = g.maxLimit || 150;
       document.getElementById("editGalleryModal").classList.remove("hidden");
       document.getElementById("editGalleryModal").classList.add("flex");
+      pushOverlayHistory("editGallery");
     };
 
     window.closeEditGalleryModal = () => {
       editingGalleryId = null;
       document.getElementById("editGalleryModal").classList.add("hidden");
       document.getElementById("editGalleryModal").classList.remove("flex");
+      cleanupOverlayHistory("editGallery");
     };
 
     window.saveEditedGallery = async () => {
@@ -680,11 +742,13 @@
       renderClientHelpThread();
       document.getElementById("clientSettingsModal").classList.remove("hidden");
       document.getElementById("clientSettingsModal").classList.add("flex");
+      pushOverlayHistory("settings");
     };
 
     window.closeClientSettings = () => {
       document.getElementById("clientSettingsModal").classList.add("hidden");
       document.getElementById("clientSettingsModal").classList.remove("flex");
+      cleanupOverlayHistory("settings");
     };
 
     function renderClientHelpThread() {
@@ -749,12 +813,14 @@
     window.openAdminHelpInbox = async () => {
       document.getElementById("adminHelpModal").classList.remove("hidden");
       document.getElementById("adminHelpModal").classList.add("flex");
+      pushOverlayHistory("adminHelp");
       await loadAdminHelpInbox();
     };
 
     window.closeAdminHelpInbox = () => {
       document.getElementById("adminHelpModal").classList.add("hidden");
       document.getElementById("adminHelpModal").classList.remove("flex");
+      cleanupOverlayHistory("adminHelp");
       loadAdminGalleries();
     };
 
@@ -871,12 +937,14 @@
       speedHistory = [];
       document.getElementById("speedModal").classList.remove("hidden");
       document.getElementById("speedModal").classList.add("flex");
+      pushOverlayHistory("speed");
       renderSpeedCard();
     };
 
     window.closeSpeedMode = () => {
       document.getElementById("speedModal").classList.add("hidden");
       document.getElementById("speedModal").classList.remove("flex");
+      cleanupOverlayHistory("speed");
       renderClientPhotos();
     };
 
@@ -1351,6 +1419,7 @@
       updateFramePreviewUI();
       document.getElementById("framePreviewModal").classList.remove("hidden");
       document.getElementById("framePreviewModal").classList.add("flex");
+      if (activeOverlayKind !== "lightbox") pushOverlayHistory("frame");
     };
 
     window.openFramePreviewFromLightbox = () => {
@@ -1360,6 +1429,7 @@
     window.closeFramePreview = () => {
       document.getElementById("framePreviewModal").classList.add("hidden");
       document.getElementById("framePreviewModal").classList.remove("flex");
+      cleanupOverlayHistory("frame");
     };
 
     window.setFrameStyle = (style) => {
@@ -1475,12 +1545,14 @@
 
       document.getElementById("folderModal").classList.remove("hidden");
       document.getElementById("folderModal").classList.add("flex");
+      pushOverlayHistory("folder");
       updateFolderModalUI();
     };
 
     window.closeFolderModal = () => {
       document.getElementById("folderModal").classList.add("hidden");
       document.getElementById("folderModal").classList.remove("flex");
+      cleanupOverlayHistory("folder");
     };
 
     window.setFolderPickerFilter = (f) => {
@@ -2689,12 +2761,14 @@
       updateLightboxUI();
       document.getElementById("lightbox").classList.remove("hidden");
       document.getElementById("lightbox").classList.add("flex");
+      pushOverlayHistory("lightbox");
     };
 
     window.closeLightbox = () => {
       resetLightboxZoom();
       document.getElementById("lightbox").classList.add("hidden");
       document.getElementById("lightbox").classList.remove("flex");
+      cleanupOverlayHistory("lightbox");
       renderClientPhotos();
     };
 
